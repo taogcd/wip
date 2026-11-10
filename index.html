@@ -97,6 +97,7 @@ const DASH_PRINT = new Uint8Array(GAPS);
 let agit = 0, tau = 0;                              // how stirred the gaps are; the gaps' own clock
 // each dash sits on its own spring, softly tied to its neighbours
 const DY = new Float32Array(GAPS), DV = new Float32Array(GAPS), DCX = new Float32Array(GAPS);
+const DXO = new Float32Array(GAPS), DXV = new Float32Array(GAPS);   // sideways push away from the cursor
 const msp = { vx: 0, vy: 0, t: 0 };               // cursor velocity, px/s
 let hoverPrev = -1, wheelKick = 0;
 /* each letter wears its own print and is re-inked on its own */
@@ -388,7 +389,8 @@ function drawDashes(dt) {
   const gWord = dl * 1.64, gComp = Math.max(dl, W / 3 - dl);      // ~30% fewer dashes; three words at the end
   const g0 = Math.exp(lerp(Math.log(gWord), Math.log(gComp), e));
   const reveal = smooth(4.5, 9.5, th);
-  const A = Math.min(1, agit + pull * 0.7);
+  const calm = 1 - 0.85 * e;                                      // the small words stay composed
+  const A = Math.min(1, agit + pull * 0.7) * calm;
   const near = mouse.x ?? W / 2, R = W * 0.3, yLine = H / 2;
 
   // 1. lay the dashes out along the line
@@ -399,6 +401,25 @@ function drawDashes(dt) {
     const nz = 0.62 * Math.sin(tau * GF1[n] + GP1[n]) + 0.38 * Math.sin(tau * GF2[n] + GP2[n]);
     x += dl + g0 * Math.exp(A * w * 1.7 * nz);
     n++;
+  }
+
+  // 1b. like poles: the dashes either side of the cursor push away from it, the next ones crowd up
+  const unit = dl + g0;
+  let vf = 0;
+  if (mouse.x !== null) vf = Math.exp(-(((mouse.y - yLine) / (0.13 * H)) ** 2));
+  const S = unit * (0.95 - 0.8 * e) * vf * (1 + 0.6 * pull), Rr = unit * 1.6;
+  {
+    const steps = Math.max(1, Math.ceil(dt * 240)), h = dt / steps;
+    for (let i = 0; i < n; i++) {
+      let tgt = 0;
+      if (S > 0.01) {
+        const d = DCX[i] - mouse.x;
+        tgt = S * Math.tanh(d / (0.35 * dl)) * Math.exp(-Math.abs(d) / Rr);
+      }
+      for (let st = 0; st < steps; st++) { DXV[i] += (80 * (tgt - DXO[i]) - 13 * DXV[i]) * h; DXO[i] += DXV[i] * h; }
+      DCX[i] += DXO[i];
+    }
+    for (let i = n; i < Math.min(GAPS, n + 8); i++) { DXO[i] = 0; DXV[i] = 0; }
   }
 
   // 2. the cursor touches one dash at a time
@@ -416,7 +437,7 @@ function drawDashes(dt) {
     // a quick stroke sets every dash it passes over moving; a slow one only nudges the dash under it
     if (hoverPrev >= 0 && hoverPrev !== hov && speed > 700) {
       const side = mouse.y < yLine ? 1 : -1;
-      const imp = (msp.vy * 0.05 + side * (speed - 700) * 0.045) * boost;
+      const imp = (msp.vy * 0.05 + side * (speed - 700) * 0.045) * boost * (1 - 0.6 * e);
       const a0 = Math.min(hoverPrev, hov), a1 = Math.max(hoverPrev, hov);
       for (let j = a0; j <= a1; j++) DV[j] = Math.max(-260, Math.min(260, DV[j] + imp));
     }
@@ -430,7 +451,7 @@ function drawDashes(dt) {
   let push = 0;
   if (hov >= 0) {
     const dy = mouse.y - yLine, f = 1 - Math.min(1, Math.abs(dy) / band);
-    push = -(dy >= 0 ? 1 : -1) * f * 0.022 * H * boost;
+    push = -(dy >= 0 ? 1 : -1) * f * 0.022 * H * boost * (1 - 0.6 * e);
   }
   for (let st = 0; st < steps; st++) {
     for (let i = 0; i < n; i++) {
