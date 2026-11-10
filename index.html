@@ -55,17 +55,17 @@ function reink(pace = 1) {
 const ROWS_PER_PX = META.rows / 1700;   // drag-atlas rows per strip pixel at its natural scale
 
 /* ---------- load letterpress strips + ink-drag atlases ---------- */
-const STRIP = new Array(NP), SMEAR = new Array(NP), BRIDGE = new Array(NP), READY = new Uint8Array(NP);
+const STRIP = new Array(NP), SMEAR = new Array(NP), DENSE = new Array(NP), READY = new Uint8Array(NP);
 META.prints.forEach(p => { p.lh = Math.min(p.bh, Math.round(0.158 * p.bw)); });
 // every print's letters are placed on the same reference spacing, so mixed prints line up
 const REFC = Array.from({ length: 9 }, (_, i) => med(META.prints.map(p => ((p.b[i] + p.b[i + 1]) / 2 - META.PAD) / p.bw)));
 function load(k) {
-  const a = new Image(), b = new Image();
+  const a = new Image(), b = new Image(), c = new Image();
   const n = String(k).padStart(2, '0');
-  a.src = 'prints/p' + n + '.webp'; b.src = 'prints/s' + n + '.webp';
-  Promise.all([a.decode(), b.decode()]).then(() => {
-    STRIP[k] = a; SMEAR[k] = b; READY[k] = 1;
-    if (k === 0) document.getElementById('loading').remove();
+  a.src = 'prints/p' + n + '.webp'; b.src = 'prints/s' + n + '.webp'; c.src = 'prints/d' + n + '.webp';
+  Promise.all([a.decode(), b.decode(), c.decode()]).then(() => {
+    STRIP[k] = a; SMEAR[k] = b; DENSE[k] = c; READY[k] = 1;
+    const l = document.getElementById('loading'); if (l) l.remove();
   }).catch(() => {});
 }
 for (let k = 0; k < NP; k++) load(k);
@@ -191,15 +191,36 @@ function placeText(e) {
 const MIXH = 512;
 const mix = document.createElement('canvas'); mix.width = 1200; mix.height = MIXH;
 const mctx = mix.getContext('2d');
-function bridgeFor(k) {
-  if (BRIDGE[k]) return BRIDGE[k];
-  const sm = SMEAR[k], c = document.createElement('canvas');
-  c.width = sm.width; c.height = 2;
-  const g = c.getContext('2d');
-  g.drawImage(sm, 0, 0, sm.width, 1, 0, 0, sm.width, 1);
-  g.drawImage(sm, 0, ROWS - 1, sm.width, 1, 0, 1, sm.width, 1);
-  return BRIDGE[k] = c;
-}
+const mix2 = document.createElement('canvas'); mix2.width = 1200; mix2.height = MIXH;
+const m2ctx = mix2.getContext('2d');
+// patchy masks (blotchy noise, 16 coverage levels): where a mask is set the dry drag shows, elsewhere the
+// dense one - so a half-dry drag dries out in patches instead of fading into a flat tint
+const MASKS = 16, MASK = [];
+(function buildMasks() {
+  const w = mix.width, h = MIXH, n = new Float32Array(w * h), tmp = new Float32Array(w * h);
+  let seed = 424242; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const blur = (src, dst, rx, ry) => {
+    for (let y = 0; y < h; y++) { let acc = 0, c = 0; const o = y * w;
+      for (let x = -rx; x < w; x++) { if (x + rx < w) { acc += src[o + x + rx]; c++; } if (x - rx - 1 >= 0) { acc -= src[o + x - rx - 1]; c--; } if (x >= 0) dst[o + x] = acc / c; } }
+    for (let x = 0; x < w; x++) { let acc = 0, c = 0;
+      for (let y = -ry; y < h; y++) { if (y + ry < h) { acc += dst[(y + ry) * w + x]; c++; } if (y - ry - 1 >= 0) { acc -= dst[(y - ry - 1) * w + x]; c--; } if (y >= 0) src[y * w + x] = acc / c; } }
+  };
+  const layer = (rx, ry, wgt) => {
+    const a = new Float32Array(w * h); for (let i = 0; i < a.length; i++) a[i] = rnd();
+    blur(a, tmp, rx, ry); blur(a, tmp, rx, ry);
+    let lo = Infinity, hi = -Infinity; for (const v of a) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    for (let i = 0; i < n.length; i++) n[i] += wgt * (a[i] - lo) / (hi - lo);
+  };
+  layer(14, 6, 0.55); layer(4, 2, 0.3); layer(1, 1, 0.15);
+  const sample = []; for (let i = 0; i < n.length; i += 97) sample.push(n[i]); sample.sort((x, y) => x - y);
+  for (let l = 1; l < MASKS; l++) {
+    const q = sample[Math.floor(sample.length * l / MASKS)];
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'), im = g.createImageData(w, h), d = im.data;
+    for (let i = 0; i < n.length; i++) d[i * 4 + 3] = n[i] < q ? 255 : 0;
+    g.putImageData(im, 0, 0); MASK[l] = c;
+  }
+})();
 // Each letter (upper half + ink drag + lower half) is first put together on its own layer, where the
 // pieces overlap by a device pixel so no paper shows through the joins; the finished letter is then
 // overprinted (multiply) onto the page like one impression.
@@ -245,17 +266,25 @@ function drawLetter(k, i, alpha, X, Y, kk, rot, D, hsScreen) {
     g.save();
     const skew = 2 * hs / L;                                          // straight lean, no curve
     g.transform(1, 0, skew, 1, -skew * uTop, 0);
-    const solid = 1 - smooth(60, 1100, L);                            // strip px of pull
+    const dry = smooth(60, 1100, L);                                   // strip px of pull
+    const lvl = Math.round(dry * MASKS);
     const ins = Math.min(6, sw * 0.04), dw = sw - 2 * ins;               // no slivers of the neighbouring letter
-    if (solid < 0.01 || sw > mix.width) {
+    if (lvl >= MASKS || dw > mix.width) {
       g.drawImage(sm, b0 + ins, 0, dw, ROWS, x0 - hs + ins, uTop, dw, L);
+    } else if (lvl <= 0) {
+      g.drawImage(DENSE[k], b0 + ins, 0, dw, ROWS, x0 - hs + ins, uTop, dw, L);
     } else {
+      // dense drag, with the dry drag let through in patches
+      m2ctx.setTransform(1, 0, 0, 1, 0, 0);
+      m2ctx.globalCompositeOperation = 'source-over'; m2ctx.globalAlpha = 1;
+      m2ctx.clearRect(0, 0, dw, MIXH);
+      m2ctx.drawImage(sm, b0 + ins, 0, dw, ROWS, 0, 0, dw, MIXH);
+      m2ctx.globalCompositeOperation = 'destination-in';
+      m2ctx.drawImage(MASK[lvl], 0, 0, dw, MIXH, 0, 0, dw, MIXH);
       mctx.setTransform(1, 0, 0, 1, 0, 0);
       mctx.globalCompositeOperation = 'source-over'; mctx.globalAlpha = 1;
-      mctx.imageSmoothingQuality = 'high';
-      mctx.drawImage(bridgeFor(k), b0 + ins, 0, dw, 2, 0, 0, dw, MIXH);
-      mctx.globalAlpha = 1 - solid;
-      mctx.drawImage(sm, b0 + ins, 0, dw, ROWS, 0, 0, dw, MIXH);
+      mctx.drawImage(DENSE[k], b0 + ins, 0, dw, ROWS, 0, 0, dw, MIXH);
+      mctx.drawImage(mix2, 0, 0, dw, MIXH, 0, 0, dw, MIXH);
       g.drawImage(mix, 0, 0, dw, MIXH, x0 - hs + ins, uTop, dw, L);
     }
     g.restore();
