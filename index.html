@@ -37,6 +37,25 @@ const NP = META.prints.length, ROWS = META.rows;
 const med = a => a.slice().sort((x, y) => x - y)[a.length >> 1];
 const REF_BW = med(META.prints.map(p => p.bw)), REF_BH = med(META.prints.map(p => p.bh));
 const LET = 9;
+/* ---------- the dashed line: every dash is a tiny letterpress impression of the whole word ---------- */
+const THUMB = new Array(/*NP*/ 64), THUMB_W = 480, DASH_ASP = 6.3;
+function makeThumb(k) {
+  const P = META.prints[k], img = STRIP[k];
+  const lh = Math.min(P.bh, Math.round(0.158 * P.bw));
+  const sy = Math.max(0, Math.round(P.yc - 0.55 * lh)), sh = Math.min(P.h - sy, Math.round(1.08 * lh));
+  const sx = Math.round(META.PAD * 0.6), sw = P.w - 2 * sx;
+  const c = document.createElement('canvas'); c.width = THUMB_W; c.height = Math.round(THUMB_W / DASH_ASP);
+  const g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
+  g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, c.width, c.height);
+  g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  THUMB[k] = c;
+}
+const GAPS = 512;                                   // per-gap random character
+const GF1 = new Float32Array(GAPS), GF2 = new Float32Array(GAPS), GP1 = new Float32Array(GAPS), GP2 = new Float32Array(GAPS);
+const DASH_PRINT = new Uint8Array(GAPS);
+{ let sd = 13579; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < GAPS; i++) { GF1[i] = 0.6 + r() * 1.4; GF2[i] = 1.7 + r() * 2.6; GP1[i] = r() * 6.283; GP2[i] = r() * 6.283; DASH_PRINT[i] = Math.floor(r() * 18); } }
+let agit = 0, tau = 0;                              // how stirred the gaps are; the gaps' own clock
 /* each letter wears its own print and is re-inked on its own */
 const CUR = Int8Array.from({ length: LET }, () => Math.floor(Math.random() * NP));
 const NXT = new Int8Array(LET).fill(-1), FADE = new Float32Array(LET), FADE_DUR = new Float32Array(LET);
@@ -64,7 +83,7 @@ function load(k) {
   const n = String(k).padStart(2, '0');
   a.src = 'prints/p' + n + '.webp'; b.src = 'prints/s' + n + '.webp'; c.src = 'prints/d' + n + '.webp';
   Promise.all([a.decode(), b.decode(), c.decode()]).then(() => {
-    STRIP[k] = a; SMEAR[k] = b; DENSE[k] = c; READY[k] = 1;
+    STRIP[k] = a; SMEAR[k] = b; DENSE[k] = c; READY[k] = 1; makeThumb(k);
     const l = document.getElementById('loading'); if (l) l.remove();
   }).catch(() => {});
 }
@@ -131,7 +150,12 @@ function setAuto(on) {
 }
 cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); drag = { y: e.clientY, s: sT }; setAuto(false); });
 cv.addEventListener('pointermove', e => {
-  if (mouse.x !== null) wave = Math.min(1, wave + Math.hypot(e.clientX - mouse.x, e.clientY - mouse.y) / 220);
+  if (mouse.x !== null) {
+    wave = Math.min(1, wave + Math.hypot(e.clientX - mouse.x, e.clientY - mouse.y) / 220);
+    const dx = Math.abs(e.clientX - mouse.x) / Math.max(1, W);
+    agit = Math.min(1, agit + dx * 3.2);          // moving left/right unsettles the gaps
+    tau += dx * 5;                                // ...and moves them on
+  }
   mouse.x = e.clientX; mouse.y = e.clientY;
   if (drag) {
     const d0 = Math.abs(drag.y - H / 2), d1 = Math.abs(e.clientY - H / 2);
@@ -299,6 +323,45 @@ function drawLetter(k, i, alpha, X, Y, kk, rot, D, hsScreen) {
   ctx.drawImage(layer, 0, 0, bw, bh, bx0, by0, bw, bh);
 }
 
+/* ---------- dashed line across the page, through the middle of the word ---------- */
+const smoothPull = { v: 0 };
+function drawDashes(dt) {
+  agit *= Math.pow(0.45, dt);                                     // settles back to even spacing
+  smoothPull.v += (s - smoothPull.v) * Math.min(1, dt * 6);
+  const pull = smoothPull.v;
+  tau += dt * (0.15 + 1.6 * pull);
+  const e = ease(z);
+  const fs0 = 0.021 * H;                                          // size of the small titles
+  const th0 = Math.max(1.6, fs0 * 0.105), th1 = 0.026 * H;        // stroke of the titles -> legible prints
+  const th = Math.exp(lerp(Math.log(th0), Math.log(th1), e));
+  const dl = th * DASH_ASP, g0 = dl * 0.55;
+  const reveal = smooth(3.5, 10, th);                             // solid dash -> letterpress impression
+  const amp = Math.min(1.6, agit * 1.1 + pull * 1.25);            // pulling makes the gaps far more unsettled
+  const near = mouse.x !== null ? mouse.x : W / 2, R = W * 0.28;
+  const yMid = H / 2, curve = pull * 0.022 * H;                   // small vertical waves while pulling
+  const yAt = x => yMid + curve * (0.62 * Math.sin(x / W * 6.283 * 1.3 + tau * 1.7) + 0.38 * Math.sin(x / W * 6.283 * 3.1 - tau * 2.3));
+
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = '#3F4190';
+  let x = 0, i = 0;
+  while (x < W && i < GAPS) {
+    const cx = x + dl / 2, cy = yAt(cx);
+    const slope = (yAt(cx + 4) - yAt(cx - 4)) / 8;
+    ctx.setTransform(DPR, 0, 0, DPR, DPR * cx, DPR * cy);
+    if (slope) ctx.rotate(Math.atan(slope));
+    if (reveal < 1) { ctx.globalAlpha = 1 - reveal; ctx.fillRect(-dl / 2, -th / 2, dl, th); }
+    const k = DASH_PRINT[i] % NP;
+    if (reveal > 0 && THUMB[k]) { ctx.globalAlpha = reveal; ctx.drawImage(THUMB[k], -dl / 2, -th / 2, dl, th); }
+    // the gap after this dash: equal at rest, uneven and restless when stirred
+    const w = mouse.x !== null ? 0.35 + 0.65 * Math.exp(-(((cx - near) / R) ** 2)) : 0.6;
+    const n = 0.62 * Math.sin(tau * GF1[i] + GP1[i]) + 0.38 * Math.sin(tau * GF2[i] + GP2[i]);
+    const gap = g0 * Math.max(0.06, 1 + amp * w * 1.35 * n);
+    x += dl + gap; i++;
+  }
+  ctx.globalAlpha = 1;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+}
+
 /* ---------- frame ---------- */
 let last = performance.now(), zSpeed = 0;
 function frame(now) {
@@ -364,6 +427,7 @@ function frame(now) {
       drawLetter(kk2, i, a, X, Y, kk, rot, D, lean);
     }
   }
+  drawDashes(dt);
   placeText(ease(z));
 
   requestAnimationFrame(frame);
