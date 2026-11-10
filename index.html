@@ -49,13 +49,71 @@ function makeThumb(k) {
   g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, c.width, c.height);
   g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
   THUMB[k] = c;
+  makeStem(k);
 }
+const STEM = new Array(64), STEM_INK = new Float32Array(64), STEM_W = 260;
+function makeStem(k) {
+  const P = META.prints[k], img = STRIP[k];
+  const lh = Math.min(P.bh, Math.round(0.158 * P.bw));
+  const bx0 = P.b[6], bw = P.b[7] - P.b[6];                       // the I
+  const sx = Math.round(bx0 + bw * 0.32), sw = Math.max(4, Math.round(bw * 0.36));
+  const sy = Math.round(P.yc - 0.3 * lh), sh = Math.round(0.6 * lh);
+  const c = document.createElement('canvas'); c.width = STEM_W; c.height = Math.round(STEM_W / DASH_ASP);
+  const g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
+  g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, c.width, c.height);
+  g.translate(c.width / 2, c.height / 2); g.rotate(-Math.PI / 2);
+  g.drawImage(img, sx, sy, sw, sh, -c.height / 2, -c.width / 2, c.height, c.width);
+  // keep the grain, but make sure the stem reads as ink: stretch so the dense parts are full ink
+  const im = g.getImageData(0, 0, c.width, c.height), d = im.data, n = d.length / 4;
+  const dk = new Float32Array(n);
+  for (let i = 0; i < n; i++) dk[i] = Math.max(0, (255 - d[i * 4]) / (255 - 68));
+  const srt = Array.from(dk).sort((a, b) => a - b), p85 = Math.max(0.05, srt[Math.floor(n * 0.5)]);
+  for (let i = 0; i < n; i++) {
+    const v = 0.6 + 0.4 * Math.min(1, dk[i] / p85);                 // a little grain, rectangle intact
+    d[i * 4] = 255 - v * (255 - 68); d[i * 4 + 1] = 255 - v * (255 - 74); d[i * 4 + 2] = 255 - v * (255 - 156);
+  }
+  g.putImageData(im, 0, 0);
+  STEM[k] = c; STEM_INK[k] = p85;
+  // is every letter of this print legible? (used to pick the small words)
+  const tc = document.createElement('canvas'); tc.width = 360; tc.height = 40;
+  const tg = tc.getContext('2d'); tg.fillStyle = '#FFFFFF'; tg.fillRect(0, 0, 360, 40);
+  const ty = Math.round(P.yc - 0.5 * lh);
+  tg.drawImage(img, P.b[0], ty, P.b[9] - P.b[0], lh, 0, 0, 360, 40);
+  const td = tg.getImageData(0, 0, 360, 40).data, lm = [];
+  for (let L = 0; L < 9; L++) {
+    const xa = Math.round((P.b[L] - P.b[0]) / (P.b[9] - P.b[0]) * 360), xb = Math.round((P.b[L + 1] - P.b[0]) / (P.b[9] - P.b[0]) * 360);
+    let sum = 0, cnt = 0;
+    for (let y = 0; y < 40; y++) for (let x = xa; x < xb; x++) { sum += (255 - td[(y * 360 + x) * 4]); cnt++; }
+    lm.push(sum / Math.max(1, cnt));
+  }
+  WORD_OK[k] = P.src !== '23958bd8' && Math.min(...lm) > 0.45 * Math.max(...lm) ? 1 : 0;
+}
+const WORD_OK = new Uint8Array(64);
 const GAPS = 512;                                   // per-gap random character
 const GF1 = new Float32Array(GAPS), GF2 = new Float32Array(GAPS), GP1 = new Float32Array(GAPS), GP2 = new Float32Array(GAPS);
 const DASH_PRINT = new Uint8Array(GAPS);
 { let sd = 13579; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
   for (let i = 0; i < GAPS; i++) { GF1[i] = 0.6 + r() * 1.4; GF2[i] = 1.7 + r() * 2.6; GP1[i] = r() * 6.283; GP2[i] = r() * 6.283; DASH_PRINT[i] = Math.floor(r() * 18); } }
 let agit = 0, tau = 0;                              // how stirred the gaps are; the gaps' own clock
+const SN = 160, SU = new Float32Array(SN), SV = new Float32Array(SN);   // the line as a damped string
+function pluck(mx, my, mvx, mvy, gain) {
+  const side = my < H / 2 ? 1 : -1, R = W * 0.11;                     // pushed away from the cursor
+  for (let i = 1; i < SN - 1; i++) {
+    const x = i / (SN - 1) * W, g = Math.exp(-(((x - mx) / R) ** 2));
+    if (g > 0.01) SV[i] += gain * g * (mvy * 0.9 + side * Math.abs(mvx) * 0.4);
+  }
+}
+function stepString(dt) {
+  const steps = Math.max(1, Math.ceil(dt * 240)), h = dt / steps;
+  const T = 9000, K = 22, DAMP = 3.4, lim = 0.16 * H;               // tension, pull back to straight, damping
+  for (let s = 0; s < steps; s++) {
+    for (let i = 1; i < SN - 1; i++) {
+      const a = T * (SU[i - 1] + SU[i + 1] - 2 * SU[i]) - K * SU[i] - DAMP * SV[i];
+      SV[i] += a * h;
+    }
+    for (let i = 1; i < SN - 1; i++) SU[i] = Math.max(-lim, Math.min(lim, SU[i] + SV[i] * h));
+  }
+}
 /* each letter wears its own print and is re-inked on its own */
 const CUR = Int8Array.from({ length: LET }, () => Math.floor(Math.random() * NP));
 const NXT = new Int8Array(LET).fill(-1), FADE = new Float32Array(LET), FADE_DUR = new Float32Array(LET);
@@ -152,9 +210,11 @@ cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); dra
 cv.addEventListener('pointermove', e => {
   if (mouse.x !== null) {
     wave = Math.min(1, wave + Math.hypot(e.clientX - mouse.x, e.clientY - mouse.y) / 220);
-    const dx = Math.abs(e.clientX - mouse.x) / Math.max(1, W);
-    agit = Math.min(1, agit + dx * 3.2);          // moving left/right unsettles the gaps
-    tau += dx * 5;                                // ...and moves them on
+    const mvx = e.clientX - mouse.x, mvy = e.clientY - mouse.y;
+    const moved = (Math.abs(mvx) + Math.abs(mvy)) / Math.max(1, W);
+    agit = Math.min(1, agit + moved * 4.5);       // moving the mouse unsettles the gaps
+    tau += moved * 9;                             // ...and reshuffles them
+    pluck(e.clientX, e.clientY, mvx, mvy, 7 * (1 + 2.5 * smoothPull.v));
   }
   mouse.x = e.clientX; mouse.y = e.clientY;
   if (drag) {
@@ -173,6 +233,9 @@ addEventListener('wheel', e => {
   zT = clamp(zT - d * 0.0011, 0, 1);
   // turning the wheel pulls the letters open - but not at either end, where the letters stay closed
   if (zT !== before && zT > 0 && zT < 1) kick = Math.min(0.4, kick + Math.abs(d) * 0.0008);
+  // the wheel also stirs the line: a push at the cursor, and the gaps reshuffle
+  agit = Math.min(1, agit + Math.abs(d) * 0.0016); tau += Math.abs(d) / Math.max(1, W) * 3;
+  pluck(mouse.x ?? W / 2, mouse.y ?? H / 2, 0, -d * 0.22, 6 * (1 + 2.5 * smoothPull.v));
 }, { passive: false });
 
 addEventListener('keydown', e => {
@@ -326,37 +389,51 @@ function drawLetter(k, i, alpha, X, Y, kk, rot, D, hsScreen) {
 /* ---------- dashed line across the page, through the middle of the word ---------- */
 const smoothPull = { v: 0 };
 function drawDashes(dt) {
-  agit *= Math.pow(0.45, dt);                                     // settles back to even spacing
+  stepString(dt);
+  agit *= Math.pow(0.5, dt);                                      // settles back to even spacing
   smoothPull.v += (s - smoothPull.v) * Math.min(1, dt * 6);
-  const pull = smoothPull.v;
-  tau += dt * (0.15 + 1.6 * pull);
-  const e = ease(z);
-  const fs0 = 0.021 * H;                                          // size of the small titles
-  const th0 = Math.max(1.6, fs0 * 0.105), th1 = 0.026 * H;        // stroke of the titles -> legible prints
+  const pull = smoothPull.v, e = ease(z);
+  const th0 = Math.max(2, 0.021 * H * 0.13);                      // stroke of the small titles
+  const th1 = 11.2 * clamp(H / 900, 0.9, 1.4);                    // small SYMPOSIUM at about 11 pt
   const th = Math.exp(lerp(Math.log(th0), Math.log(th1), e));
-  const dl = th * DASH_ASP, g0 = dl * 0.55;
-  const reveal = smooth(3.5, 10, th);                             // solid dash -> letterpress impression
-  const amp = Math.min(1.6, agit * 1.1 + pull * 1.25);            // pulling makes the gaps far more unsettled
-  const near = mouse.x !== null ? mouse.x : W / 2, R = W * 0.28;
-  const yMid = H / 2, curve = pull * 0.022 * H;                   // small vertical waves while pulling
-  const yAt = x => yMid + curve * (0.62 * Math.sin(x / W * 6.283 * 1.3 + tau * 1.7) + 0.38 * Math.sin(x / W * 6.283 * 3.1 - tau * 2.3));
+  const dl = th * DASH_ASP;
+  const gWord = dl * 0.85, gComp = Math.max(dl, W / 3 - dl);      // three small words across the page
+  const g0 = Math.exp(lerp(Math.log(gWord), Math.log(gComp), e));
+  const reveal = smooth(4.5, 9.5, th);                            // inked stem -> the printed word
+  const A = Math.min(1, agit + pull * 0.7);
+  const near = mouse.x ?? W / 2, R = W * 0.3;
+  const yLine = H / 2;
+  const yAt = x => {
+    const f = clamp(x / W, 0, 1) * (SN - 1), j = Math.min(SN - 2, Math.floor(f)), u = f - j;
+    return yLine + SU[j] * (1 - u) + SU[j + 1] * u;
+  };
+  const good = [];
+  for (let k = 0; k < NP; k++) if (STEM[k] && STEM_INK[k] > 0.5) good.push(k);
 
   ctx.globalCompositeOperation = 'multiply';
-  ctx.fillStyle = '#3F4190';
-  let x = 0, i = 0;
+  let x = lerp(0, g0 * 0.5, e), i = 0;
   while (x < W && i < GAPS) {
     const cx = x + dl / 2, cy = yAt(cx);
-    const slope = (yAt(cx + 4) - yAt(cx - 4)) / 8;
+    const slope = (yAt(cx + 6) - yAt(cx - 6)) / 12;
     ctx.setTransform(DPR, 0, 0, DPR, DPR * cx, DPR * cy);
     if (slope) ctx.rotate(Math.atan(slope));
-    if (reveal < 1) { ctx.globalAlpha = 1 - reveal; ctx.fillRect(-dl / 2, -th / 2, dl, th); }
-    const k = DASH_PRINT[i] % NP;
+    if (reveal < 1) {
+      const ks = good.length ? (STEM_INK[DASH_PRINT[i] % NP] > 0.5 ? DASH_PRINT[i] % NP : good[DASH_PRINT[i] % good.length]) : -1;
+      ctx.globalAlpha = 1 - reveal;
+      if (ks >= 0) {
+        ctx.save(); ctx.scale(i % 2 ? -1 : 1, (i >> 1) % 2 ? -1 : 1);
+        ctx.drawImage(STEM[ks], -dl / 2, -th / 2, dl, th);
+        ctx.restore();
+      } else { ctx.fillStyle = '#3F4190'; ctx.fillRect(-dl / 2, -th / 2, dl, th); }
+    }
+    let k = DASH_PRINT[i] % NP;
+    if (!WORD_OK[k]) { const ok = []; for (let q = 0; q < NP; q++) if (WORD_OK[q]) ok.push(q); if (ok.length) k = ok[DASH_PRINT[i] % ok.length]; }
     if (reveal > 0 && THUMB[k]) { ctx.globalAlpha = reveal; ctx.drawImage(THUMB[k], -dl / 2, -th / 2, dl, th); }
-    // the gap after this dash: equal at rest, uneven and restless when stirred
-    const w = mouse.x !== null ? 0.35 + 0.65 * Math.exp(-(((cx - near) / R) ** 2)) : 0.6;
+    // the gap after this dash: equal at rest; when stirred, anywhere from a fifth to five times as wide
+    const w = 0.4 + 0.6 * Math.exp(-(((cx - near) / R) ** 2));
     const n = 0.62 * Math.sin(tau * GF1[i] + GP1[i]) + 0.38 * Math.sin(tau * GF2[i] + GP2[i]);
-    const gap = g0 * Math.max(0.06, 1 + amp * w * 1.35 * n);
-    x += dl + gap; i++;
+    x += dl + g0 * Math.exp(A * w * 1.7 * n);
+    i++;
   }
   ctx.globalAlpha = 1;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
