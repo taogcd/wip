@@ -18,6 +18,12 @@
   .txt { position: fixed; pointer-events: none; font-weight: 500; text-transform: uppercase;
          line-height: 1.13; letter-spacing: 0.035em; white-space: nowrap; will-change: transform; }
   .r { text-align: right; }
+  #png { position: fixed; left: 14px; bottom: 12px; z-index: 5; font: 500 10px/1 "Helvetica Neue", Helvetica, "Inter", Arial, sans-serif;
+         letter-spacing: 0.08em; color: var(--ink); background: rgba(255,255,255,.85); border: 1px solid currentColor;
+         border-radius: 2px; padding: 4px 6px 3px; cursor: pointer; opacity: .45; transition: opacity .2s; }
+  #png:hover, #png:focus-visible { opacity: 1; }
+  #png:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
+  #png[disabled] { cursor: progress; opacity: .8; }
   #loading { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 12px;
              letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
 </style>
@@ -28,6 +34,7 @@
 <div class="txt" id="tB">MA Graphic<br>Communication<br>Design</div>
 <div class="txt r" id="tC">19– 20<br>November</div>
 <div id="loading">Loading prints</div>
+<button id="png" type="button" aria-label="Export a high-resolution PNG of this frame" title="Export high-resolution PNG">PNG</button>
 
 
 
@@ -494,7 +501,59 @@ function drawDashes(dt) {
 
 /* ---------- frame ---------- */
 let last = performance.now(), zSpeed = 0;
+/* ---------- export: the current frame at high resolution, titles included, UI left out ---------- */
+let exportScale = 0;
+const pngBtn = document.getElementById('png');
+pngBtn.addEventListener('click', async () => {
+  if (exportScale || pngBtn.disabled) return;
+  pngBtn.disabled = true; pngBtn.textContent = '…';
+  try { await document.fonts.ready; } catch (_) {}
+  // aim for ~6000 px on the long side, within what browsers will allocate for one canvas
+  let sc = Math.max(3, Math.ceil(6000 / Math.max(W, H)));
+  while (sc > 2 && (W * sc > 16000 || H * sc > 16000 || W * H * sc * sc > 60e6)) sc--;
+  exportScale = sc;
+});
+function drawTitles(g) {
+  g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#3F4190';
+  g.textBaseline = 'middle';
+  for (const id in TXT) {
+    const el = txtEl[id], cs = getComputedStyle(el), r = el.getBoundingClientRect();
+    const fs = parseFloat(cs.fontSize), lh = parseFloat(cs.lineHeight) || fs * 1.13;
+    const ls = (parseFloat(cs.letterSpacing) || 0);
+    g.font = `${cs.fontWeight} ${fs}px ${cs.fontFamily}`;
+    const lines = el.innerHTML.split(/<br\s*\/?>/i).map(s => s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').toUpperCase());
+    lines.forEach((line, j) => {
+      const chars = Array.from(line), widths = chars.map(ch => g.measureText(ch).width + ls);
+      const total = widths.reduce((a, b) => a + b, 0) - ls;
+      let x = TXT[id].right ? r.right - total : r.left;
+      const y = r.top + (j + 0.5) * lh;
+      chars.forEach((ch, c) => { g.fillText(ch, x, y); x += widths[c]; });
+    });
+  }
+}
+function finishExport() {
+  const out = document.createElement('canvas'); out.width = cv.width; out.height = cv.height;
+  const g = out.getContext('2d');
+  g.drawImage(cv, 0, 0);
+  g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawTitles(g);
+  const done = () => { pngBtn.disabled = false; pngBtn.textContent = 'PNG'; };
+  out.toBlob(blob => {
+    if (!blob) { done(); return; }
+    const a = document.createElement('a'), d = new Date();
+    const stamp = d.toISOString().slice(0, 19).replace(/[-:T]/g, '');
+    a.href = URL.createObjectURL(blob);
+    a.download = `symposium-${stamp}-${out.width}x${out.height}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    done();
+  }, 'image/png');
+}
+
 function frame(now) {
+  const exporting = exportScale > 0;
+  if (exporting) { DPR = exportScale; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); }
   const dt = Math.min(0.05, (now - last) / 1000); last = now; clock += dt;
   let sGoal;
   if (auto) { autoT += dt; [zT, sGoal] = timeline(autoT); }
@@ -560,6 +619,7 @@ function frame(now) {
   drawDashes(dt);
   placeText(ease(z));
 
+  if (exporting) { finishExport(); exportScale = 0; resize(); }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
