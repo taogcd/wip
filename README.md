@@ -9,3 +9,7 @@ SYMPOSIUM, printed in letterpress, pulled open across the page.
 Display only. Hidden keys: `F` fullscreen, `Space` autoplay.
 
 MA Graphic Communication Design, Central Saint Martins — 19–20 November 2026.
+
+## press/
+
+WIP Press: a digital composing stick for the MA Graphic Communication Design In Progress 2027 publication workshop. Set a keyword with lead spacers, then pull a proof in the WIP Press Black Scan founts and save it as a PNG.
