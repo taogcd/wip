@@ -95,6 +95,7 @@ main.printing .side{display:none}
 .about{margin:0;padding:0 max(4vw,16px) 28px;max-width:calc(380px + 8vw);font:11pt/1.4 Helvetica,"Helvetica Neue",Arial,sans-serif;color:#111}
 @media (min-width:900px) and (min-height:640px){.about{position:fixed;left:0;bottom:0;padding:0 0 28px max(4vw,16px);max-width:calc(380px + 4vw)}}
 .about b{font-weight:700}
+body.printing .about,body.printing .note{display:none}
 .note{margin:0;padding:0 max(4vw,16px) 24px;font:9px/1.4 Helvetica,"Helvetica Neue",Arial,sans-serif;color:#9a9a9a}
 @media (min-width:900px) and (min-height:640px){.note{position:fixed;right:0;bottom:0;padding:0 max(4vw,16px) 30px 0;text-align:right}}
 @media (max-width:760px){
@@ -349,7 +350,7 @@ function drawProof(animate){
  setWord(x,E,(cw-Wem*E)/2,mg+TOP*E,'#111');
  if(animate){c.classList.remove('pull');void c.offsetWidth;c.classList.add('pull')}
 }
-function show(print){$('compose').hidden=print;$('proofview').hidden=!print;$('bench').classList.toggle('printing',print)}
+function show(print){$('compose').hidden=print;$('proofview').hidden=!print;$('bench').classList.toggle('printing',print);document.body.classList.toggle('printing',print)}
 $('print').onclick=()=>{
  if(!letters().length){nudge(box);keys.focus();return}
  if(!Object.keys(ATLAS).length)return;
