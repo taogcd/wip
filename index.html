@@ -60,7 +60,8 @@ main.printing .side{display:none}
 .count.full{color:var(--ink)}
 .press{all:unset;cursor:pointer;min-height:44px;display:inline-flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:4px;padding:0 4px;color:var(--ink);
  font:700 20px/1 "Albertus WIP",Georgia,serif;letter-spacing:.06em}
-.press canvas.lbl{display:block;height:var(--h,20px)}
+.press canvas.lbl{display:block;height:var(--h,20px);flex:none;max-width:none}
+.press{flex:none}
 .press.big{--h:clamp(38px,4.6vw,56px)}
 .press{position:relative}
 .press.big{padding-bottom:14px}
@@ -71,7 +72,7 @@ main.printing .side{display:none}
 
 /* case */
 .sidehead{height:calc(var(--rh,52px) - 6px);display:flex;align-items:flex-end;padding-bottom:12px}
-.sidehead canvas{display:block;height:17px}
+.sidehead canvas{display:block;height:17px;flex:none;max-width:none}
 .case{display:grid;grid-template-columns:repeat(3,auto);gap:6px;padding:6px;
  background:var(--brush),linear-gradient(#d9dbd8,#c4c6c3);border-radius:3px;box-shadow:0 10px 18px rgb(0 0 0/.12)}
 .cell{display:flex;align-items:flex-end;justify-content:center;padding:16px 10px 10px;min-width:44px;min-height:170px;border-radius:2px;
@@ -207,19 +208,23 @@ function glyph(ctx,w,ch,ox,base,E){
  const m=META[w][ch],[sx,sy,sw,sh]=m.s,[x,y,gw,gh]=m.r,k=E/1000;
  ctx.drawImage(ATLAS[w],sx,sy,sw,sh,ox+x*k,base+y*k,gw*k,gh*k);
 }
-function inkText(c,txt){
- const H=c.clientHeight||20,E=H*1000/880,dpr=Math.min(2,devicePixelRatio||1),gap=.05;
- let W=0;for(const ch of txt)W+=(ch===' '?.3:adv(200,ch)+gap)*E;
- c.style.width=W+'px';c.width=W*dpr;c.height=H*dpr;
- const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.imageSmoothingQuality='high';
- let ox=0;for(const ch of txt){if(ch!==' ')glyph(x,200,ch,ox,E*.86,E);ox+=(ch===' '?.3:adv(200,ch)+gap)*E}
+function inkText(c,txt,maxW){
+ c.style.height='';c.style.width='';
+ let H=Math.floor(c.getBoundingClientRect().height)||20;c.style.height=H+'px';
+ const dpr=Math.min(2,devicePixelRatio||1),gap=.05,step=ch=>ch===' '?.3:adv(200,ch)+gap;
+ let units=0;for(const ch of txt)units+=step(ch);
+ let E=H*1000/880,W=units*E;
+ if(maxW&&W>maxW){H=Math.floor(H*maxW/W);E=H*1000/880;W=units*E;c.style.height=H+'px'}
+ c.style.width=W+'px';c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);
+ const x=c.getContext('2d');x.setTransform(c.width/W,0,0,c.height/H,0,0);x.imageSmoothingQuality='high';
+ let ox=0;for(const ch of txt){if(ch!==' ')glyph(x,200,ch,ox,E*.86,E);ox+=step(ch)*E}
 }
 function labels(){
  document.querySelectorAll('.press').forEach(b=>{
   b.innerHTML='<canvas class="lbl" aria-hidden="true"></canvas>'+(b.id==='print'?'<canvas class="rule" aria-hidden="true"></canvas>':'');
   inkText(b.querySelector('.lbl'),b.dataset.w);
  });
- const h=document.querySelector('.sidehead canvas');inkText(h,h.dataset.w);
+ const h=document.querySelector('.sidehead canvas');inkText(h,h.dataset.w,$('case').getBoundingClientRect().width||undefined);
  requestAnimationFrame(inkRule);
 }
 
@@ -381,7 +386,7 @@ $('save').onclick=async()=>{
 };
 
 let rT=0;
-new ResizeObserver(()=>{clearTimeout(rT);rT=setTimeout(()=>{if($('proofview').hidden){render();inkRule()}else drawProof(false)},60)}).observe(document.body);
+new ResizeObserver(()=>{clearTimeout(rT);rT=setTimeout(()=>{if(ATLAS[200])labels();if($('proofview').hidden){render();inkRule()}else drawProof(false)},60)}).observe(document.body);
 render();
 keys.focus({preventScroll:true});
 }
