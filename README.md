@@ -1,15 +1,11 @@
-# wip — MAGCD Symposium 2026
+# wip — WIP Press
 
-SYMPOSIUM, printed in letterpress, pulled open across the page.
+A digital composing stick for the MA Graphic Communication Design In Progress 2027 publication workshop.
 
-- Eighteen letterpress impressions of the word, scanned at native resolution; each letter is re-inked with a different impression at random.
-- Scroll to recompose the word into the slide-header arrangement and back; the letters are pulled apart into ink drag on the way and close again at either end.
-- The ink drag is made from the roller grain of the prints themselves.
+- Type a keyword on the composing stick. The space bar does nothing: every gap is built from lead spacers dragged in from the case.
+- Print pulls a proof in the WIP Press Black Scan founts. Each letter is drawn from one of nine scanned impressions at random.
+- Save the proof as a PNG with both partners' names.
 
-Display only. Hidden keys: `F` fullscreen, `Space` autoplay.
+MA Graphic Communication Design, Central Saint Martins, 2026–27.
 
-MA Graphic Communication Design, Central Saint Martins — 19–20 November 2026.
-
-## press/
-
-WIP Press: a digital composing stick for the MA Graphic Communication Design In Progress 2027 publication workshop. Set a keyword with lead spacers, then pull a proof in the WIP Press Black Scan founts and save it as a PNG.
+The earlier SYMPOSIUM letterpress piece (19–20 November 2026) is kept in this repository's history at commit 570193d.

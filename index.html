@@ -2,629 +2,373 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MAGCD Symposium 2026</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIP Press</title>
 <style>
-  :root { --ink: #3F4190; --paper: #FFFFFF; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; background: var(--paper); overflow: hidden; }
-  body { font-family: "Helvetica Neue", Helvetica, "Inter", Arial, sans-serif; color: var(--ink);
-         -webkit-font-smoothing: antialiased; user-select: none; }
-  canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block;
-           touch-action: none; cursor: ns-resize; }
-  .txt { position: fixed; pointer-events: none; font-weight: 500; text-transform: uppercase;
-         line-height: 1.13; letter-spacing: 0.035em; white-space: nowrap; will-change: transform; }
-  .r { text-align: right; }
-  #png { position: fixed; left: 14px; bottom: 12px; z-index: 5; font: 500 10px/1 "Helvetica Neue", Helvetica, "Inter", Arial, sans-serif;
-         letter-spacing: 0.08em; color: var(--ink); background: rgba(255,255,255,.85); border: 1px solid currentColor;
-         border-radius: 2px; padding: 4px 6px 3px; cursor: pointer; opacity: .45; transition: opacity .2s; }
-  #png:hover, #png:focus-visible { opacity: 1; }
-  #png:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
-  #png[disabled] { cursor: progress; opacity: .8; }
-  #loading { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 12px;
-             letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
+/* VOICE: silent bench, no instructions beyond what the objects say
+   IDEA: a steel composing stick with a pica rule, head and knee; sorts and spacers of lead; a proof press
+   PICTURE: the stick at full width, modelled in brushed steel; after printing, the proof alone
+   COLOUR and TYPE: white ground, black ink, steel and lead greys; Albertus on the sorts, WIP Press scans for action words
+   LAYOUT: stick left, a three-compartment case on the right; the proof replaces both; stacks under 760px */
+@font-face{font-family:"Albertus WIP";src:url(fonts/albertus-bold.woff2) format("woff2");font-display:block}
+:root{color-scheme:light;--bg:#fff;--ink:#111;--soft:#8a8a8a;
+ --brush:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='120'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
+ --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .3 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;overflow-x:clip}
+main{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(16px,3vw,40px);align-items:start;padding:clamp(20px,4vw,56px) max(4vw,16px)}
+main.printing{grid-template-columns:minmax(0,1fr)}
+main.printing .case{display:none}
+
+/* composing stick */
+.cstick{position:relative;cursor:text;filter:drop-shadow(0 14px 18px rgb(0 0 0/.16)) drop-shadow(0 2px 3px rgb(0 0 0/.18))}
+.plate{position:relative;height:var(--rh,52px);margin-left:var(--hw,22px);border-radius:3px 3px 0 0;
+ background:var(--brush),linear-gradient(#eef0ee,#d4d6d3 70%,#c3c5c2)}
+.plate svg{position:absolute;inset:0;width:100%;height:100%}
+.channel{position:relative;display:flex;align-items:stretch;
+ background:var(--brush),linear-gradient(#b3b5b2,#cfd1ce 22%,#dcdedb 70%,#c6c8c5)}
+.channel::before{content:"";position:absolute;left:0;right:0;top:0;height:10px;background:linear-gradient(rgb(0 0 0/.22),transparent);pointer-events:none}
+.head{flex:none;width:var(--hw,22px);margin-top:calc(-1 * var(--rh,52px));border-radius:3px 0 0 3px;
+ background:var(--brush),linear-gradient(90deg,#c9cbc8,#f1f2f0 35%,#d0d2cf 70%,#a9aba8)}
+.line{flex:1;position:relative;padding:var(--pv,18px) 0 var(--pv,18px) 0;overflow:hidden}
+.stick{display:flex;flex-wrap:nowrap;align-items:stretch;font-family:"Albertus WIP",Georgia,serif;font-weight:700;line-height:1;min-height:1.02em}
+.knee{flex:none;width:34px;position:relative;border-radius:2px;
+ background:var(--brush),linear-gradient(90deg,#9c9e9b,#e2e4e1 30%,#c4c6c3 70%,#8d8f8c)}
+.knee::after{content:"";position:absolute;left:14px;top:18%;bottom:18%;width:5px;border-radius:3px;background:linear-gradient(90deg,#5d5f5c,#8f918e)}
+.lip{height:12px;margin-left:var(--hw,22px);border-radius:0 0 3px 0;background:var(--brush),linear-gradient(#f3f4f2,#c2c4c1 60%,#9fa19e)}
+.tok{height:1.02em;flex:none;display:block;position:relative}
+.ch{line-height:1.02em;color:#151515;user-select:none;text-shadow:0 1px 0 rgb(255 255 255/.25);
+ background:var(--grain),linear-gradient(90deg,#9d9e9a,#b1b2ae 45%,#a3a4a0 85%,#8e8f8b);
+ box-shadow:inset 1px 0 0 rgb(255 255 255/.35),inset -1px 0 0 rgb(0 0 0/.28)}
+.sp,.ghost{
+ background:
+  linear-gradient(to bottom,transparent 64%,rgb(40 40 38/.75) 64%,rgb(40 40 38/.75) 65.6%,rgb(255 255 255/.55) 65.6%,rgb(255 255 255/.55) 66.6%,transparent 66.6%),
+  var(--grain),linear-gradient(90deg,#8f908c,#a1a29e 40%,#94958f 82%,#82837f);
+ box-shadow:inset 1px 0 0 rgb(255 255 255/.3),inset -1px 0 0 rgb(0 0 0/.3),inset 0 6px 8px -4px rgb(0 0 0/.25)}
+.sp{cursor:grab;touch-action:none}
+.sp-S{width:.125em}.sp-M{width:.25em}.sp-L{width:.5em}
+.caret{width:0;flex:none;position:relative}
+.caret::after{content:"";position:absolute;left:-1px;top:.04em;height:.94em;width:2px;background:#111;opacity:0}
+.focus .caret::after{opacity:1;animation:blink 1.05s steps(1) infinite}
+.caret.drop::after{opacity:1;width:5px;left:-2.5px;top:-.1em;height:1.22em;animation:none}
+@keyframes blink{50%{opacity:0}}
+.keys{position:absolute;left:40px;top:12px;width:1px;height:1px;opacity:0;font-size:16px;border:0;padding:0}
+
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 26px;margin-top:22px}
+.count{margin-right:auto;color:var(--soft);font-size:14px;font-variant-numeric:tabular-nums}
+.count.full{color:var(--ink)}
+.press{all:unset;cursor:pointer;min-height:44px;display:inline-flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:4px;padding:0 4px;color:var(--ink);
+ font:700 20px/1 "Albertus WIP",Georgia,serif;letter-spacing:.06em}
+.press canvas.lbl{display:block;height:var(--h,20px)}
+.press.big{--h:clamp(38px,4.6vw,56px)}
+.press{position:relative}
+.press.big{padding-bottom:14px}
+.press canvas.rule{position:absolute;left:4px;bottom:0;width:calc(100% - 8px);height:9px}
+.press:hover{opacity:.72}
+.press:focus-visible,input:focus-visible,.src:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+.press:disabled{opacity:.2;cursor:default}
+
+/* case */
+.case{display:grid;grid-template-columns:repeat(3,auto);gap:6px;padding:6px;margin-top:calc(var(--rh,52px) - 6px);
+ background:var(--brush),linear-gradient(#d9dbd8,#c4c6c3);border-radius:3px;box-shadow:0 10px 18px rgb(0 0 0/.12)}
+.cell{display:flex;align-items:flex-end;justify-content:center;padding:16px 10px 10px;min-width:44px;min-height:170px;border-radius:2px;
+ background:linear-gradient(#e9eae8,#f6f7f5);box-shadow:inset 0 8px 12px -6px rgb(0 0 0/.3),inset 0 -1px 0 rgb(255 255 255/.8)}
+.src{all:unset;cursor:grab;touch-action:none;padding:4px;display:block;line-height:0}
+.src svg{display:block;overflow:visible}
+.src:hover svg{filter:brightness(1.06)}
+.ghost{position:fixed;z-index:9;pointer-events:none;opacity:.94;box-shadow:0 12px 22px rgb(0 0 0/.25)}
+
+/* proof */
+#proof{display:block;width:100%}
+.pull{animation:pull .75s cubic-bezier(.3,.1,.2,1)}
+@keyframes pull{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@media (prefers-reduced-motion:reduce){.pull{animation:none}.focus .caret::after{animation:none}}
+.after{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px 28px;margin-top:clamp(20px,3vw,36px)}
+.names{margin-right:auto;width:min(100%,380px);display:block}
+.names input{display:block;width:100%;font:inherit;font-size:17px;min-height:44px;padding:0 2px;border:0;border-bottom:1px solid var(--ink);background:transparent;color:var(--ink);border-radius:0}
+.names input::placeholder{color:#b4b4b4}
+.names small{display:block;margin-top:6px;font-size:13px;color:var(--soft)}
+.saved{min-height:1.4em;margin:8px 0 0;font-size:14px;color:var(--soft)}
+.about{margin:0;padding:0 max(4vw,16px) 28px;max-width:calc(380px + 8vw);font:11pt/1.4 Helvetica,"Helvetica Neue",Arial,sans-serif;color:#111}
+@media (min-width:900px) and (min-height:640px){.about{position:fixed;left:0;bottom:0;padding:0 0 28px max(4vw,16px);max-width:calc(380px + 4vw)}}
+@media (max-width:760px){
+ main{grid-template-columns:minmax(0,1fr)}
+ .case{margin-top:0;justify-self:start}
+ .cell{min-height:150px}
+ .knee{width:24px}.knee::after{left:9px}
+}
 </style>
 </head>
 <body>
-<canvas id="c" aria-label="SYMPOSIUM printed in letterpress; the letters are pulled apart into ink drag and rearranged across the page"></canvas>
-<div class="txt r" id="tA">Symposium<br>2026</div>
-<div class="txt" id="tB">MA Graphic<br>Communication<br>Design</div>
-<div class="txt r" id="tC">19– 20<br>November</div>
-<div id="loading">Loading prints</div>
-<button id="png" type="button" aria-label="Export a high-resolution PNG of this frame" title="Export high-resolution PNG">PNG</button>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <linearGradient id="front" x1="0" x2="1"><stop offset="0" stop-color="#a7a8a4"/><stop offset=".4" stop-color="#9a9b97"/><stop offset=".85" stop-color="#8b8c88"/><stop offset="1" stop-color="#a09f9b"/></linearGradient>
+  <linearGradient id="top" x1="0" x2="1"><stop offset="0" stop-color="#d9dad7"/><stop offset="1" stop-color="#bebfbb"/></linearGradient>
+  <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".95" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .38 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+ </defs>
+</svg>
 
+<main id="bench">
+ <section id="compose">
+  <div class="cstick" id="cstick">
+   <div class="plate"><svg id="rule" aria-hidden="true"></svg></div>
+   <div class="channel">
+    <div class="head"></div>
+    <div class="line" id="linebox"><div class="stick" id="stick" aria-label="Composing stick"></div></div>
+    <div class="knee"></div>
+   </div>
+   <div class="lip"></div>
+   <input class="keys" id="keys" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" aria-label="Type your word">
+  </div>
+  <div class="bar">
+   <span class="count" id="count"></span>
+   <button class="press" id="clear" type="button" aria-label="Clear" data-w="CLEAR">CLEAR</button>
+   <button class="press big" id="print" type="button" aria-label="Print" data-w="PRINT" disabled>PRINT</button>
+  </div>
+ </section>
 
+ <section id="proofview" hidden>
+  <canvas id="proof" aria-label="Printed proof"></canvas>
+  <div class="after">
+   <label class="names"><input id="names" autocomplete="off" placeholder="e.g. Matthew and Shaheer"><small>Your name and your partner's name</small></label>
+   <button class="press" id="shuffle" type="button" aria-label="Print again" data-w="AGAIN">AGAIN</button>
+   <button class="press" id="save" type="button" aria-label="Save PNG" data-w="SAVE">SAVE</button>
+   <button class="press" id="back" type="button" aria-label="Back" data-w="BACK">BACK</button>
+  </div>
+  <p class="saved" id="saved" aria-live="polite"></p>
+ </section>
+
+ <aside class="case" id="case" aria-label="Lead spacers"></aside>
+</main>
+
+<p class="about">WIP Press is a digital composing stick for MA Graphic Communication Design In Progress 2027. Type the keyword you chose with your partner. As in letterpress, the space bar does nothing here: every gap is built from lead spacers dragged in from the case. Print pulls a proof in the WIP Press Black Scan founts, giving each letter one of nine scanned impressions at random. Save the proof as a PNG with both your names.</p>
 
 <script>
-const META = {"PAD": 40, "rows": 768, "prints": [{"w": 2962, "h": 539, "bw": 2882, "bh": 459, "cut": 269, "cuts": [269, 269, 269, 192, 269, 269, 269, 269, 269], "yc": 269, "b": [20, 289, 608, 1050, 1303, 1709, 1954, 2099, 2463, 2942], "src": "179aab16"}, {"w": 2948, "h": 544, "bw": 2868, "bh": 464, "cut": 272, "cuts": [272, 272, 272, 195, 272, 272, 272, 272, 272], "yc": 272, "b": [20, 287, 603, 1047, 1300, 1709, 1953, 2117, 2460, 2928], "src": "01704877"}, {"w": 2958, "h": 516, "bw": 2878, "bh": 436, "cut": 258, "cuts": [258, 258, 258, 184, 258, 258, 258, 258, 258], "yc": 258, "b": [20, 289, 602, 1045, 1301, 1706, 1965, 2096, 2458, 2938], "src": "51ab7f97"}, {"w": 2968, "h": 817, "bw": 2888, "bh": 737, "cut": 300, "cuts": [300, 300, 300, 222, 300, 300, 300, 300, 300], "yc": 300, "b": [20, 299, 613, 1069, 1317, 1729, 1980, 2135, 2497, 2948], "src": "38cf568f"}, {"w": 2950, "h": 541, "bw": 2870, "bh": 461, "cut": 270, "cuts": [270, 270, 270, 193, 270, 270, 270, 270, 270], "yc": 270, "b": [20, 288, 607, 1049, 1302, 1707, 1954, 2099, 2459, 2930], "src": "f6aaf4bd"}, {"w": 2963, "h": 530, "bw": 2883, "bh": 450, "cut": 265, "cuts": [265, 265, 265, 188, 265, 265, 265, 265, 265], "yc": 265, "b": [20, 287, 604, 1047, 1303, 1709, 1957, 2098, 2461, 2943], "src": "f847d95f"}, {"w": 2919, "h": 519, "bw": 2839, "bh": 439, "cut": 259, "cuts": [259, 259, 259, 184, 259, 259, 259, 259, 259], "yc": 259, "b": [20, 295, 593, 1054, 1310, 1715, 1963, 2098, 2465, 2899], "src": "23958bd8"}, {"w": 3089, "h": 566, "bw": 3009, "bh": 486, "cut": 283, "cuts": [283, 283, 283, 202, 283, 283, 283, 283, 283], "yc": 283, "b": [20, 293, 731, 1179, 1307, 1706, 2098, 2110, 2478, 3069], "src": "fde0d9ef"}, {"w": 2936, "h": 507, "bw": 2856, "bh": 427, "cut": 253, "cuts": [253, 253, 253, 180, 253, 253, 253, 253, 253], "yc": 253, "b": [20, 293, 612, 1056, 1311, 1717, 1962, 2098, 2466, 2916], "src": "621b72ce"}, {"w": 3170, "h": 1009, "bw": 3090, "bh": 929, "cut": 671, "cuts": [671, 671, 671, 588, 671, 671, 671, 671, 671], "yc": 671, "b": [20, 288, 572, 1043, 1496, 1931, 2142, 2312, 2679, 3150], "src": "a7288fd0"}, {"w": 2934, "h": 496, "bw": 2854, "bh": 416, "cut": 248, "cuts": [248, 248, 248, 177, 248, 248, 248, 248, 248], "yc": 248, "b": [20, 281, 596, 1038, 1295, 1702, 1949, 2086, 2449, 2914], "src": "0e24d907"}, {"w": 3054, "h": 676, "bw": 2974, "bh": 596, "cut": 356, "cuts": [356, 356, 356, 276, 356, 356, 356, 356, 356], "yc": 356, "b": [20, 388, 632, 1024, 1295, 1705, 2085, 2086, 2450, 3034], "src": "4cfdcafa"}, {"w": 2926, "h": 502, "bw": 2846, "bh": 422, "cut": 251, "cuts": [251, 251, 251, 179, 251, 251, 251, 251, 251], "yc": 251, "b": [20, 288, 601, 1041, 1298, 1705, 1953, 2091, 2457, 2906], "src": "ef1ffb83"}, {"w": 2965, "h": 539, "bw": 2885, "bh": 459, "cut": 269, "cuts": [269, 269, 269, 192, 269, 269, 269, 269, 269], "yc": 269, "b": [20, 290, 610, 1055, 1309, 1715, 1960, 2108, 2466, 2945], "src": "8bb7c4b4"}, {"w": 2988, "h": 547, "bw": 2908, "bh": 467, "cut": 273, "cuts": [273, 273, 273, 195, 273, 273, 273, 273, 273], "yc": 273, "b": [20, 297, 620, 1071, 1321, 1729, 1980, 2116, 2492, 2968], "src": "39685299"}, {"w": 2911, "h": 546, "bw": 2831, "bh": 466, "cut": 279, "cuts": [279, 279, 279, 197, 279, 279, 279, 279, 279], "yc": 273, "b": [20, 271, 569, 1010, 1266, 1675, 1920, 2082, 2433, 2891], "src": "c0d59dea"}, {"w": 2971, "h": 547, "bw": 2891, "bh": 467, "cut": 273, "cuts": [273, 273, 273, 195, 273, 273, 273, 273, 273], "yc": 273, "b": [20, 293, 612, 1055, 1309, 1715, 1959, 2105, 2467, 2951], "src": "788e2755"}, {"w": 2950, "h": 515, "bw": 2870, "bh": 435, "cut": 257, "cuts": [257, 257, 257, 183, 257, 257, 257, 257, 257], "yc": 257, "b": [20, 292, 608, 1051, 1306, 1713, 1960, 2101, 2464, 2930], "src": "60b29334"}]};
-const NP = META.prints.length, ROWS = META.rows;
-const med = a => a.slice().sort((x, y) => x - y)[a.length >> 1];
-const REF_BW = med(META.prints.map(p => p.bw)), REF_BH = med(META.prints.map(p => p.bh));
-const LET = 9;
-/* ---------- the dashed line: every dash is a tiny letterpress impression of the whole word ---------- */
-const THUMB = new Array(/*NP*/ 64), THUMB_W = 480, DASH_ASP = 6.3;
-function makeThumb(k) {
-  const P = META.prints[k], img = STRIP[k];
-  const lh = Math.min(P.bh, Math.round(0.158 * P.bw));
-  const sy = Math.max(0, Math.round(P.yc - 0.55 * lh)), sh = Math.min(P.h - sy, Math.round(1.08 * lh));
-  const sx = Math.round(META.PAD * 0.6), sw = P.w - 2 * sx;
-  const c = document.createElement('canvas'); c.width = THUMB_W; c.height = Math.round(THUMB_W / DASH_ASP);
-  const g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
-  g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, c.width, c.height);
-  g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
-  THUMB[k] = c;
-  makeStem(k);
+{
+const SIZE={S:.125,M:.25,L:.5}, MARK={S:.024,M:.078,L:.21}, NAME={S:'small',M:'medium',L:'large'};
+const WEIGHTS=[100,200,300,400,500,600,700,800,900];
+const OK=/^[A-Z.!&-]$/, MAXC=14, MAXRUN=4, TOP=.8, BOT=.22;
+const $=id=>document.getElementById(id);
+const stick=$('stick'), box=$('cstick'), line=$('linebox'), keys=$('keys');
+let toks=[], caret=0, uid=1, dropAt=-1, drag=null;
+
+const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rng=seed=>()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const letters=()=>toks.filter(t=>t.t==='c');
+const word=()=>letters().map(t=>t.ch).join('');
+
+/* spacers in the case, modelled on real lead: grey face with a nick, top and side faces */
+function leadSVG(k){
+ const h=120,w=SIZE[k]*h,d=9,W=w+d,H=h+d,n=k==='L'?2:1;
+ let nicks='';for(let i=0;i<n;i++){const y=d+h*(.64+i*.07);nicks+=`<rect x="0" y="${y}" width="${w}" height="2.2" fill="#2f2f2d" opacity="${i?.45:.8}"/><rect x="0" y="${y+2.2}" width="${w}" height="1.2" fill="#fff" opacity=".55"/>`}
+ return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><polygon points="0,${d} ${d},0 ${W},0 ${w},${d}" fill="url(#top)"/><polygon points="${w},${d} ${W},0 ${W},${h} ${w},${H}" fill="#767773"/><rect x="0" y="${d}" width="${w}" height="${h}" fill="url(#front)"/><rect x="0" y="${d}" width="${w}" height="${h}" fill="#000" filter="url(#grain)" opacity=".9"/>${nicks}<rect x="0" y="${d}" width="1" height="${h}" fill="#fff" opacity=".45"/></svg>`;
 }
-const STEM = new Array(64), STEM_INK = new Float32Array(64), STEM_W = 260;
-function makeStem(k) {
-  const P = META.prints[k], img = STRIP[k];
-  const lh = Math.min(P.bh, Math.round(0.158 * P.bw));
-  const bx0 = P.b[6], bw = P.b[7] - P.b[6];                       // the I
-  const sx = Math.round(bx0 + bw * 0.32), sw = Math.max(4, Math.round(bw * 0.36));
-  const sy = Math.round(P.yc - 0.3 * lh), sh = Math.round(0.6 * lh);
-  const c = document.createElement('canvas'); c.width = STEM_W; c.height = Math.round(STEM_W / DASH_ASP);
-  const g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
-  g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, c.width, c.height);
-  g.translate(c.width / 2, c.height / 2); g.rotate(-Math.PI / 2);
-  g.drawImage(img, sx, sy, sw, sh, -c.height / 2, -c.width / 2, c.height, c.width);
-  // keep the grain, but make sure the stem reads as ink: stretch so the dense parts are full ink
-  const im = g.getImageData(0, 0, c.width, c.height), d = im.data, n = d.length / 4;
-  const dk = new Float32Array(n);
-  for (let i = 0; i < n; i++) dk[i] = Math.max(0, (255 - d[i * 4]) / (255 - 68));
-  const srt = Array.from(dk).sort((a, b) => a - b), p85 = Math.max(0.05, srt[Math.floor(n * 0.5)]);
-  for (let i = 0; i < n; i++) {
-    const v = 0.6 + 0.4 * Math.min(1, dk[i] / p85);                 // a little grain, rectangle intact
-    d[i * 4] = 255 - v * (255 - 68); d[i * 4 + 1] = 255 - v * (255 - 74); d[i * 4 + 2] = 255 - v * (255 - 156);
-  }
-  g.putImageData(im, 0, 0);
-  STEM[k] = c; STEM_INK[k] = p85;
-  // is every letter of this print legible? (used to pick the small words)
-  const tc = document.createElement('canvas'); tc.width = 360; tc.height = 40;
-  const tg = tc.getContext('2d'); tg.fillStyle = '#FFFFFF'; tg.fillRect(0, 0, 360, 40);
-  const ty = Math.round(P.yc - 0.5 * lh);
-  tg.drawImage(img, P.b[0], ty, P.b[9] - P.b[0], lh, 0, 0, 360, 40);
-  const td = tg.getImageData(0, 0, 360, 40).data, lm = [];
-  for (let L = 0; L < 9; L++) {
-    const xa = Math.round((P.b[L] - P.b[0]) / (P.b[9] - P.b[0]) * 360), xb = Math.round((P.b[L + 1] - P.b[0]) / (P.b[9] - P.b[0]) * 360);
-    let sum = 0, cnt = 0;
-    for (let y = 0; y < 40; y++) for (let x = xa; x < xb; x++) { sum += (255 - td[(y * 360 + x) * 4]); cnt++; }
-    lm.push(sum / Math.max(1, cnt));
-  }
-  WORD_OK[k] = P.src !== '23958bd8' && Math.min(...lm) > 0.45 * Math.max(...lm) ? 1 : 0;
-}
-const WORD_OK = new Uint8Array(64);
-const GAPS = 512;                                   // per-gap random character
-const GF1 = new Float32Array(GAPS), GF2 = new Float32Array(GAPS), GP1 = new Float32Array(GAPS), GP2 = new Float32Array(GAPS);
-const DASH_PRINT = new Uint8Array(GAPS);
-{ let sd = 13579; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
-  for (let i = 0; i < GAPS; i++) { GF1[i] = 0.6 + r() * 1.4; GF2[i] = 1.7 + r() * 2.6; GP1[i] = r() * 6.283; GP2[i] = r() * 6.283; DASH_PRINT[i] = Math.floor(r() * 18); } }
-let agit = 0, tau = 0;                              // how stirred the gaps are; the gaps' own clock
-// each dash sits on its own spring, softly tied to its neighbours
-const DY = new Float32Array(GAPS), DV = new Float32Array(GAPS), DCX = new Float32Array(GAPS);
-const DXO = new Float32Array(GAPS), DXV = new Float32Array(GAPS);   // sideways push away from the cursor
-const msp = { vx: 0, vy: 0, t: 0 };               // cursor velocity, px/s
-let hoverPrev = -1, wheelKick = 0;
-/* each letter wears its own print and is re-inked on its own */
-// the two-line print cannot be cut into clean single letters (its second line runs through them)
-const LETTER_POOL = META.prints.map((p, k) => k).filter(k => META.prints[k].src !== 'a7288fd0');
-const pickPrint = () => LETTER_POOL[Math.floor(Math.random() * LETTER_POOL.length)];
-const CUR = Int8Array.from({ length: LET }, () => pickPrint());
-const NXT = new Int8Array(LET).fill(-1), FADE = new Float32Array(LET), FADE_DUR = new Float32Array(LET);
-let untilNext = 1.2, lastInked = CUR[0];
-function reink(pace = 1) {
-  const idle = [...Array(LET).keys()].filter(i => NXT[i] < 0);
-  if (!idle.length) return;
-  const n = Math.min(idle.length, Math.random() < 0.8 ? 1 : 2);
-  for (let j = 0; j < n; j++) {
-    const i = idle.splice(Math.floor(Math.random() * idle.length), 1)[0];
-    let k; do { k = pickPrint(); } while (k === CUR[i] && LETTER_POOL.length > 1);
-    NXT[i] = k; FADE[i] = 0; FADE_DUR[i] = (1.0 + Math.random() * 0.6) / Math.sqrt(pace);   // calm at rest, quicker while scrolling
-    lastInked = k;
-  }
-}
-const ROWS_PER_PX = META.rows / 1700;   // drag-atlas rows per strip pixel at its natural scale
+$('case').innerHTML=['S','M','L'].map(k=>`<div class="cell"><button class="src" data-k="${k}" type="button" aria-label="${NAME[k]} spacer">${leadSVG(k)}</button></div>`).join('');
 
-/* ---------- load letterpress strips + ink-drag atlases ---------- */
-const STRIP = new Array(NP), SMEAR = new Array(NP), DENSE = new Array(NP), READY = new Uint8Array(NP);
-META.prints.forEach(p => { p.lh = Math.min(p.bh, Math.round(0.158 * p.bw)); });
-// every print's letters are placed on the same reference spacing, so mixed prints line up
-const REFC = Array.from({ length: 9 }, (_, i) => med(META.prints.map(p => ((p.b[i] + p.b[i + 1]) / 2 - META.PAD) / p.bw)));
-function load(k) {
-  const a = new Image(), b = new Image(), c = new Image();
-  const n = String(k).padStart(2, '0');
-  a.src = 'prints/p' + n + '.webp'; b.src = 'prints/s' + n + '.webp'; c.src = 'prints/d' + n + '.webp';
-  Promise.all([a.decode(), b.decode(), c.decode()]).then(() => {
-    STRIP[k] = a; SMEAR[k] = b; DENSE[k] = c; READY[k] = 1; makeThumb(k);
-    const l = document.getElementById('loading'); if (l) l.remove();
-  }).catch(() => {});
-}
-for (let k = 0; k < NP; k++) load(k);
-
-/* ---------- composition: the slide-header arrangement (S Y M P O S I U M) ---------- */
-// centre x, centre y (fractions of the page), letter height (fraction of page height)
-const COMP = [
-  [0.085, 0.10, 0.66], [0.315, 0.50, 0.60], [0.405, -0.06, 0.56],
-  [0.712, 0.43, 0.48], [0.990, 0.20, 0.56], [0.115, 0.79, 0.68],
-  [0.430, 0.85, 0.56], [0.660, 0.76, 0.58], [0.960, 0.72, 0.48]
-];
-const rnd = (() => { let s = 97531; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
-const DELAY = Array.from({ length: LET }, () => rnd() * 0.32);
-const ARC = Array.from({ length: LET }, () => (rnd() - 0.5) * 0.16);
-const ROT = Array.from({ length: LET }, () => (rnd() - 0.5) * 0.22);
-const PH = Array.from({ length: LET }, () => rnd() * 6.28);
-// each letter's ink is dragged leaning one way: straight, never curved
-const LEAN = Array.from({ length: LET }, (_, i) => (i % 2 ? 1 : -1) * (rnd() < 0.25 ? -1 : 1) * (0.14 + rnd() * 0.16));
-
-/* ---------- canvas ---------- */
-const cv = document.getElementById('c'), ctx = cv.getContext('2d');
-let W = 0, H = 0, DPR = 1;
-function resize() {
-  DPR = Math.min(2, window.devicePixelRatio || 1);
-  W = innerWidth; H = innerHeight;
-  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
-}
-addEventListener('resize', resize); resize();
-
-/* ---------- state ---------- */
-let z = 0, zT = 0;          // 0 = the word, 1 = the slide composition
-let s = 0, sT = 0;          // ink drag: 0 = closed, 1 = pulled to the page edges (sT = hand-dragged pull)
-let kick = 0;               // extra pull while the wheel is turning
-let travel = 0, auto = false, autoT = 0, clock = 0;
-let mouse = { x: null, y: null }, wave = 0, shear = 0;
-
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const smooth = (a, b, t) => { t = clamp((t - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
-const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-const lerp = (a, b, t) => a + (b - a) * t;
-
-/* autoplay: pull open -> release -> recompose -> pull the composition -> back */
-const TL = [ // [duration, z0, z1, s0, s1]
-  [1.6, 0, 0, 0, 0], [3.6, 0, 0, 0, 1], [2.4, 0, 0, 1, 1], [2.6, 0, 0, 1, 0], [0.8, 0, 0, 0, 0],
-  [3.6, 0, 1, 0, 0], [2.4, 1, 1, 0, 0], [2.8, 1, 1, 0, 0.6], [1.8, 1, 1, 0.6, 0.6], [2.4, 1, 1, 0.6, 0],
-  [0.6, 1, 1, 0, 0], [3.6, 1, 0, 0, 0]
-];
-const TL_TOTAL = TL.reduce((a, k) => a + k[0], 0);
-function timeline(t) {
-  t %= TL_TOTAL;
-  for (const [d, z0, z1, s0, s1] of TL) {
-    if (t < d) { const e = ease(t / d); return [lerp(z0, z1, e), lerp(s0, s1, e)]; }
-    t -= d;
-  }
-  return [0, 0];
+/* pica rule on the back plate */
+function drawRule(){
+ const s=$('rule'),W=s.clientWidth,H=s.clientHeight;if(!W)return;
+ const step=Math.max(6,W/150);let h='';
+ for(let i=1,x=step;x<W-4;i++,x+=step){
+  const big=i%6===0,mid=i%3===0,len=big?H*.34:mid?H*.22:H*.13;
+  h+=`<rect x="${x.toFixed(1)}" y="${(H-len).toFixed(1)}" width="1" height="${len.toFixed(1)}" fill="#2b2b2a" opacity="${big?.85:.6}"/>`;
+  if(big)h+=`<text x="${x.toFixed(1)}" y="${(H*.5).toFixed(1)}" font-size="${Math.min(13,H*.26).toFixed(1)}" font-family="system-ui,sans-serif" text-anchor="middle" fill="#2b2b2a" opacity=".8">${i/2}</text>`;
+ }
+ s.setAttribute('viewBox',`0 0 ${W} ${H}`);s.innerHTML=h;
 }
 
-/* ---------- interaction ---------- */
-let drag = null;
-function setAuto(on) {
-  if (on && !auto) autoT = 0;
-  auto = on;
+/* measuring the setting */
+const mc=document.createElement('canvas').getContext('2d'), wcache={};
+function emW(ch){const k=ch;if(!(k in wcache)){mc.font='100px "Albertus WIP"';wcache[k]=mc.measureText(ch).width/100}return wcache[k]}
+const lineEm=()=>toks.reduce((s,t)=>s+(t.t==='c'?emW(t.ch):SIZE[t.k]),0);
+document.fonts.load('40px "Albertus WIP"').then(()=>{for(const k in wcache)delete wcache[k];render()});
+
+/* press type: the scanned glyph images embedded in the WIP Press founts, drawn at their own position and size */
+let META=null;const ATLAS={};
+fetch('type/meta.json').then(r=>r.json()).then(m=>{
+ META=m;
+ WEIGHTS.forEach(w=>{const im=new Image();im.decoding='async';im.onload=()=>{ATLAS[w]=im;if(w===200)labels();$('print').disabled=!Object.keys(ATLAS).length};im.src=`type/wip-${w}.webp`});
+}).catch(()=>{});
+const adv=(w,ch)=>META[w][ch].a/1000;
+function glyph(ctx,w,ch,ox,base,E){
+ const m=META[w][ch],[sx,sy,sw,sh]=m.s,[x,y,gw,gh]=m.r,k=E/1000;
+ ctx.drawImage(ATLAS[w],sx,sy,sw,sh,ox+x*k,base+y*k,gw*k,gh*k);
 }
-cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); drag = { y: e.clientY, s: sT }; setAuto(false); });
-cv.addEventListener('pointermove', e => {
-  if (mouse.x !== null) {
-    wave = Math.min(1, wave + Math.hypot(e.clientX - mouse.x, e.clientY - mouse.y) / 220);
-    const mvx = e.clientX - mouse.x, mvy = e.clientY - mouse.y;
-    const moved = (Math.abs(mvx) + Math.abs(mvy)) / Math.max(1, W);
-    agit = Math.min(1, agit + moved * 4.5);       // moving the mouse unsettles the gaps
-    tau += moved * 9;                             // ...and reshuffles them
-    const now = performance.now(), dtm = Math.max(8, now - msp.t); msp.t = now;
-    msp.vx = mvx / dtm * 1000; msp.vy = mvy / dtm * 1000;
-  }
-  mouse.x = e.clientX; mouse.y = e.clientY;
-  if (drag) {
-    const d0 = Math.abs(drag.y - H / 2), d1 = Math.abs(e.clientY - H / 2);
-    sT = clamp(drag.s + (d1 - d0) / (H * 0.42), 0, 1);
-  }
+function labels(){
+ document.querySelectorAll('.press').forEach(b=>{
+  b.innerHTML='<canvas class="lbl" aria-hidden="true"></canvas>'+(b.id==='print'?'<canvas class="rule" aria-hidden="true"></canvas>':'');
+  const c=b.querySelector('.lbl'),H=c.clientHeight||20,E=H*1000/880,dpr=Math.min(2,devicePixelRatio||1),txt=b.dataset.w,gap=.05;
+  let W=0;for(const ch of txt)W+=(adv(200,ch)+gap)*E;
+  c.style.width=W+'px';c.width=W*dpr;c.height=H*dpr;
+  const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.imageSmoothingQuality='high';
+  let ox=0;for(const ch of txt){glyph(x,200,ch,ox,E*.86,E);ox+=(adv(200,ch)+gap)*E}
+ });
+ requestAnimationFrame(inkRule);
+}
+
+/* compose */
+function nudge(el){el.animate?.([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(4px)'},{transform:'translateX(0)'}],{duration:300})}
+function render(){
+ const avail=line.clientWidth-8;
+ const base=Math.min(120,Math.max(48,avail/8)), wem=lineEm();
+ const F=Math.max(24,Math.min(base,wem?avail/(wem+.02):base));
+ stick.style.fontSize=F+'px';
+ box.style.setProperty('--pv',Math.round(F*.16)+'px');
+ box.style.setProperty('--rh',Math.round(Math.max(40,Math.min(64,F*.5)))+'px');
+ $('case').style.setProperty('--rh',box.style.getPropertyValue('--rh'));
+ const at=dropAt>=0?dropAt:caret, cls=dropAt>=0?'caret drop':'caret';
+ let h='';
+ toks.forEach((t,i)=>{
+  if(i===at)h+=`<span class="${cls}"></span>`;
+  h+=t.t==='c'?`<span class="tok ch">${esc(t.ch)}</span>`:`<span class="tok sp sp-${t.k}" data-id="${t.id}"></span>`;
+ });
+ if(at===toks.length)h+=`<span class="${cls}"></span>`;
+ stick.innerHTML=h;
+ const n=letters().length,c=$('count');
+ c.textContent=`${n}/${MAXC} letters`;c.classList.toggle('full',n>=MAXC);
+ drawRule();
+}
+function run(i){let r=0,j=i-1;while(j>=0&&toks[j].t==='s'){r++;j--}j=i;while(j<toks.length&&toks[j].t==='s'){r++;j++}return r}
+function addSpacer(k,i){if(run(i)>=MAXRUN){nudge(box);return false}toks.splice(i,0,{id:uid++,t:'s',k});caret=i+1;return true}
+function typeChar(raw){
+ const ch=raw.toUpperCase();
+ if(ch===' '){nudge($('case'));return}
+ if(ch>='1'&&ch<='3'){addSpacer('SML'[ch-1],caret);render();return}
+ if(!OK.test(ch))return;
+ if(letters().length>=MAXC){nudge($('count'));return}
+ toks.splice(caret,0,{id:uid++,t:'c',ch});caret++;render();
+}
+keys.addEventListener('keydown',e=>{
+ if(e.metaKey||e.ctrlKey||e.altKey)return;
+ const k=e.key;
+ if(k.length===1){e.preventDefault();typeChar(k);return}
+ const act={Backspace:()=>{if(caret>0){toks.splice(caret-1,1);caret--}},Delete:()=>{if(caret<toks.length)toks.splice(caret,1)},
+  ArrowLeft:()=>caret=Math.max(0,caret-1),ArrowRight:()=>caret=Math.min(toks.length,caret+1),Home:()=>caret=0,End:()=>caret=toks.length,Enter:()=>{}}[k];
+ if(act){e.preventDefault();act();render()}
 });
-// letting go releases the pull: the halves close again
-cv.addEventListener('pointerup', () => { drag = null; sT = 0; });
-cv.addEventListener('pointercancel', () => { drag = null; sT = 0; });
-cv.addEventListener('pointerleave', () => { mouse.x = mouse.y = null; });
-addEventListener('wheel', e => {
-  e.preventDefault(); setAuto(false);
-  const d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-  const before = zT;
-  zT = clamp(zT - d * 0.0011, 0, 1);
-  // turning the wheel pulls the letters open - but not at either end, where the letters stay closed
-  if (zT !== before && zT > 0 && zT < 1) kick = Math.min(0.4, kick + Math.abs(d) * 0.0008);
-  // the wheel also stirs the line: a push at the cursor, and the gaps reshuffle
-  agit = Math.min(1, agit + Math.abs(d) * 0.0016); tau += Math.abs(d) / Math.max(1, W) * 3;
-  wheelKick += -d * 0.12;
-}, { passive: false });
-
-addEventListener('keydown', e => {
-  if (e.code === 'Space') { e.preventDefault(); setAuto(!auto); }
-  else if (e.key === 'ArrowUp') { setAuto(false); zT = clamp(zT + 0.1, 0, 1); }
-  else if (e.key === 'ArrowDown') { setAuto(false); zT = clamp(zT - 0.1, 0, 1); }
-  else if (e.key === 'f' || e.key === 'F') {
-    try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); } catch (_) {}
-  }
+keys.addEventListener('input',()=>{for(const c of keys.value)typeChar(c);keys.value=''});
+keys.addEventListener('focus',()=>box.classList.add('focus'));
+keys.addEventListener('blur',()=>box.classList.remove('focus'));
+function gapAt(x){let i=0;for(const el of stick.querySelectorAll('.tok')){const r=el.getBoundingClientRect();if(x>r.left+r.width/2)i++}return i}
+box.addEventListener('pointerdown',e=>{
+ const sp=e.target.closest('.sp');
+ if(sp){const t=toks.find(t=>t.id==sp.dataset.id);startDrag(e,t.k,t.id);return}
+ e.preventDefault();caret=toks.length?gapAt(e.clientX):0;render();keys.focus({preventScroll:true});
 });
 
-/* ---------- text blocks: corners for the word, slide positions for the composition ---------- */
-const TXT = {
-  tA: { right: true,  w: [0.03, 0.05, 0.021], c: [0.272, 0.062, 0.041] },   // right edge x, top y, font size (×H)
-  tB: { right: false, w: [0.03, 0.05, 0.021], c: [0.563, 0.045, 0.041] },   // left edge x
-  tC: { right: true,  w: [0.03, 0.865, 0.021], c: [0.584, 0.340, 0.041] }
+/* dragging lead */
+function startDrag(e,k,id){drag={k,id,x:e.clientX,y:e.clientY,moved:false,el:null};e.preventDefault()}
+function overStick(x,y){const r=box.getBoundingClientRect();return x>r.left-20&&x<r.right+20&&y>r.top-30&&y<r.bottom+30}
+document.querySelectorAll('.src').forEach(b=>{
+ b.addEventListener('pointerdown',e=>startDrag(e,b.dataset.k,0));
+ b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();addSpacer(b.dataset.k,caret);render()}});
+});
+document.addEventListener('pointermove',e=>{
+ if(!drag)return;
+ if(!drag.moved){
+  if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<5)return;
+  drag.moved=true;
+  if(drag.id){const i=toks.findIndex(t=>t.id===drag.id);toks.splice(i,1);if(caret>i)caret--}
+  const F=parseFloat(stick.style.fontSize)||96;
+  drag.el=Object.assign(document.createElement('div'),{className:'ghost'});
+  Object.assign(drag.el.style,{width:SIZE[drag.k]*F+'px',height:1.02*F+'px'});
+  document.body.append(drag.el);
+ }
+ const g=drag.el;g.style.left=e.clientX-g.offsetWidth/2+'px';g.style.top=e.clientY-g.offsetHeight/2+'px';
+ const nd=overStick(e.clientX,e.clientY)?gapAt(e.clientX):-1;
+ if(nd!==dropAt){dropAt=nd;render()}
+});
+function endDrag(e){
+ if(!drag)return;
+ const d=drag;drag=null;
+ if(!d.moved){
+  if(!d.id)addSpacer(d.k,caret);else caret=toks.findIndex(t=>t.id===d.id)+1;
+  render();keys.focus({preventScroll:true});return;
+ }
+ d.el.remove();const at=dropAt;dropAt=-1;
+ if(at>=0&&e.type==='pointerup')addSpacer(d.k,at);
+ render();keys.focus({preventScroll:true});
+}
+document.addEventListener('pointerup',endDrag);
+document.addEventListener('pointercancel',endDrag);
+$('clear').onclick=()=>{toks=[];caret=0;render();keys.focus()};
+
+/* ink: a rough-edged solid with a few press specks, used for spacers and the rule under PRINT */
+const wave=(v,a,b)=>Math.sin(v*a+b)*.6+Math.sin(v*a*2.7+b*1.3)*.4;
+function rough(ctx,x,y,w,h,unit,amp,dens,seed,ink){
+ const pad=Math.ceil(amp*3)+2,R=rng(seed),oc=document.createElement('canvas');
+ oc.width=Math.ceil(w+pad*2);oc.height=Math.ceil(h+pad*2);
+ const o=oc.getContext('2d'),ph=[R()*6.3,R()*6.3,R()*6.3,R()*6.3],st=Math.max(1.5,unit*.008),p=[];
+ for(let v=0;v<=h;v+=st)p.push([pad+amp*wave(v/unit,9,ph[0]),pad+v]);
+ for(let v=0;v<=w;v+=st)p.push([pad+v,pad+h+amp*.6*wave(v/unit,11,ph[1])]);
+ for(let v=h;v>=0;v-=st)p.push([pad+w+amp*wave(v/unit,8,ph[2]),pad+v]);
+ for(let v=w;v>=0;v-=st)p.push([pad+v,pad+amp*.6*wave(v/unit,10,ph[3])]);
+ o.fillStyle=ink;o.beginPath();p.forEach(([a,b],i)=>i?o.lineTo(a,b):o.moveTo(a,b));o.closePath();o.fill();
+ o.globalCompositeOperation='destination-out';
+ const n=Math.round(w/unit*h/unit*dens);
+ for(let i=0;i<n;i++){o.globalAlpha=.3+R()*.55;o.beginPath();o.arc(pad+R()*w,pad+R()*h,(.0012+R()*.0032)*unit,0,6.3);o.fill()}
+ ctx.drawImage(oc,x-pad,y-pad);
+}
+function inkRule(){
+ const c=document.querySelector('#print canvas.rule');if(!c)return;
+ const w=c.clientWidth,h=c.clientHeight,dpr=Math.min(2,devicePixelRatio||1);if(!w)return;
+ c.width=w*dpr;c.height=h*dpr;const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);
+ rough(x,1,2,w-2,h-4,260,1.1,700,11,'#111');
+}
+
+/* printing */
+function assign(){const ok=WEIGHTS.filter(w=>ATLAS[w]);for(const t of toks){t.seed=Math.random()*1e9|0;if(t.t==='c')t.w=ok[Math.random()*ok.length|0]}}
+function lay(E){let x=0;const items=[];for(const t of toks){const w=(t.t==='c'?adv(t.w,t.ch):SIZE[t.k])*E;items.push({t,x,w});x+=w}return{items,W:x}}
+function setWord(ctx,E,ox,base,ink){
+ for(const{t,x,w}of lay(E).items){
+  if(t.t==='c')glyph(ctx,t.w,t.ch,ox+x,base,E);
+  else{const mw=MARK[t.k]*E;rough(ctx,ox+x+(w-mw)/2,base-TOP*E,mw,(TOP+BOT)*E,E,{S:.0022,M:.004,L:.006}[t.k]*E,t.k==='S'?90:170,t.seed,ink)}
+ }
+}
+function drawProof(animate){
+ const c=$('proof'),dpr=Math.min(2,devicePixelRatio||1),cw=c.parentElement.clientWidth;
+ const Wem=lay(1).W,E=Math.min(cw*.24,cw*.9/Wem),mg=Math.max(24,E*.32),ch=(TOP+BOT)*E+mg*2;
+ c.width=cw*dpr;c.height=ch*dpr;c.style.height=ch+'px';
+ const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.imageSmoothingQuality='high';x.fillStyle='#fff';x.fillRect(0,0,cw,ch);
+ setWord(x,E,(cw-Wem*E)/2,mg+TOP*E,'#111');
+ if(animate){c.classList.remove('pull');void c.offsetWidth;c.classList.add('pull')}
+}
+function show(print){$('compose').hidden=print;$('proofview').hidden=!print;$('bench').classList.toggle('printing',print)}
+$('print').onclick=()=>{
+ if(!letters().length){nudge(box);keys.focus();return}
+ if(!Object.keys(ATLAS).length)return;
+ assign();show(true);drawProof(true);$('saved').textContent='';
 };
-const txtEl = Object.fromEntries(Object.keys(TXT).map(k => [k, document.getElementById(k)]));
-let lastTxt = -1;
-function placeText(e) {
-  const key = Math.round(e * 1000) + W * 7 + H;
-  if (key === lastTxt) return; lastTxt = key;
-  for (const k in TXT) {
-    const t = TXT[k], el = txtEl[k];
-    const fs = lerp(t.w[2], t.c[2], e) * H;
-    el.style.fontSize = fs + 'px';
-    el.style.top = lerp(t.w[1], t.c[1], e) * H + 'px';
-    if (t.right) {
-      const wordRight = W * (1 - t.w[0]), compRight = W * t.c[0];
-      el.style.right = (W - lerp(wordRight, compRight, e)) + 'px';
-    } else el.style.left = lerp(t.w[0], t.c[0], e) * W + 'px';
-  }
+$('shuffle').onclick=()=>{assign();drawProof(true);$('saved').textContent=''};
+$('back').onclick=()=>{show(false);render();inkRule();keys.focus({preventScroll:true})};
+
+/* saving */
+let dlP=null;
+const dl=()=>{if(dlP)return dlP;if(window.claude&&window.claude.use)return dlP=window.claude.use('downloads').catch(()=>null);return Promise.resolve(null)};
+setTimeout(dl,0);
+$('save').onclick=async()=>{
+ const Wem=lay(1).W,E=Math.min(1100,3000/Wem),pad=Math.round(E*.12);
+ const c=document.createElement('canvas');c.width=Math.ceil(Wem*E+pad*2);c.height=Math.ceil((TOP+BOT)*E+pad*2);
+ const cx=c.getContext('2d');cx.imageSmoothingQuality='high';setWord(cx,E,pad,pad+TOP*E,'#111');
+ const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+ const who=$('names').value.trim().replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-|-$/g,'');
+ const filename=`WIP-Press_${word().replace(/[^A-Z]/g,'')||'word'}${who?'_'+who:''}.png`;
+ const api=await dl();
+ if(api){
+  try{await api.save({filename,data:blob});$('saved').textContent='Saved.'}
+  catch(err){$('saved').textContent=err&&err.code==='declined'?'':'Saving is not available here. Open the page in a browser.'}
+ }else{
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);$('saved').textContent='Saved.';
+ }
+};
+
+let rT=0;
+new ResizeObserver(()=>{clearTimeout(rT);rT=setTimeout(()=>{if($('proofview').hidden){render();inkRule()}else drawProof(false)},60)}).observe(document.body);
+render();
+keys.focus({preventScroll:true});
 }
-
-/* ---------- drawing one letter of one print ---------- */
-// The ink drag is ONE continuous strip, only ever stretched or compressed - never spliced.
-// Under it lies a solid bridge (the top cut's ink blending into the bottom cut's ink), so a short,
-// compressed drag reads as the letter itself stretching; as the drag gets longer the bridge fades
-// and the dry roller grain of the strip shows through.
-const MIXH = 512;
-const mix = document.createElement('canvas'); mix.width = 1200; mix.height = MIXH;
-const mctx = mix.getContext('2d');
-const mix2 = document.createElement('canvas'); mix2.width = 1200; mix2.height = MIXH;
-const m2ctx = mix2.getContext('2d');
-// patchy masks (blotchy noise, 16 coverage levels): where a mask is set the dry drag shows, elsewhere the
-// dense one - so a half-dry drag dries out in patches instead of fading into a flat tint
-const MASKS = 16, MASK = [];
-(function buildMasks() {
-  const w = mix.width, h = MIXH, n = new Float32Array(w * h), tmp = new Float32Array(w * h);
-  let seed = 424242; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const blur = (src, dst, rx, ry) => {
-    for (let y = 0; y < h; y++) { let acc = 0, c = 0; const o = y * w;
-      for (let x = -rx; x < w; x++) { if (x + rx < w) { acc += src[o + x + rx]; c++; } if (x - rx - 1 >= 0) { acc -= src[o + x - rx - 1]; c--; } if (x >= 0) dst[o + x] = acc / c; } }
-    for (let x = 0; x < w; x++) { let acc = 0, c = 0;
-      for (let y = -ry; y < h; y++) { if (y + ry < h) { acc += dst[(y + ry) * w + x]; c++; } if (y - ry - 1 >= 0) { acc -= dst[(y - ry - 1) * w + x]; c--; } if (y >= 0) src[y * w + x] = acc / c; } }
-  };
-  const layer = (rx, ry, wgt) => {
-    const a = new Float32Array(w * h); for (let i = 0; i < a.length; i++) a[i] = rnd();
-    blur(a, tmp, rx, ry); blur(a, tmp, rx, ry);
-    let lo = Infinity, hi = -Infinity; for (const v of a) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
-    for (let i = 0; i < n.length; i++) n[i] += wgt * (a[i] - lo) / (hi - lo);
-  };
-  layer(14, 6, 0.55); layer(4, 2, 0.3); layer(1, 1, 0.15);
-  const sample = []; for (let i = 0; i < n.length; i += 97) sample.push(n[i]); sample.sort((x, y) => x - y);
-  for (let l = 1; l < MASKS; l++) {
-    const q = sample[Math.floor(sample.length * l / MASKS)];
-    const c = document.createElement('canvas'); c.width = w; c.height = h;
-    const g = c.getContext('2d'), im = g.createImageData(w, h), d = im.data;
-    for (let i = 0; i < n.length; i++) d[i * 4 + 3] = n[i] < q ? 255 : 0;
-    g.putImageData(im, 0, 0); MASK[l] = c;
-  }
-})();
-// Each letter (upper half + ink drag + lower half) is first put together on its own layer, where the
-// pieces overlap by a device pixel so no paper shows through the joins; the finished letter is then
-// overprinted (multiply) onto the page like one impression.
-const layer = document.createElement('canvas'); layer.width = 64; layer.height = 64;
-const lctx = layer.getContext('2d');
-// X, Y: screen position of the letter's centre; kk: screen px per strip px; D: half the pull;
-// hsScreen: horizontal offset of each half (the lean), in screen px
-function drawLetter(k, i, alpha, X, Y, kk, rot, D, hsScreen) {
-  if (!READY[k] || alpha < 0.01) return;
-  const P = META.prints[k], b0 = P.b[i], b1 = P.b[i + 1], sw = b1 - b0;
-  const img = STRIP[k], sm = SMEAR[k], CUT = P.cuts ? P.cuts[i] : P.cut;
-  const top = Math.max(0, Math.round(P.yc - 0.55 * P.lh)), bot = Math.min(P.h, Math.round(P.yc + 0.53 * P.lh));
-  const Ycut = Y + (CUT - P.yc) * kk;                                // screen y of the cut line
-  const cs = Math.cos(rot), sn = Math.sin(rot);
-  const m = [DPR * kk * cs, DPR * kk * sn, -DPR * kk * sn, DPR * kk * cs, DPR * X, DPR * Ycut];
-  const x0 = -sw / 2, hs = hsScreen / kk;
-  const uTop = -D / kk, uBot = D / kk, L = uBot - uTop;
-
-  // device-pixel bounds of the whole letter
-  const xa = x0 - Math.abs(hs) - 3, xb = x0 + sw + Math.abs(hs) + 3;
-  const ya = uTop - (CUT - top) - 3, yb = uBot + (bot - CUT) + 3;
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const [px, py] of [[xa, ya], [xb, ya], [xa, yb], [xb, yb]]) {
-    const dx = m[0] * px + m[2] * py + m[4], dy = m[1] * px + m[3] * py + m[5];
-    minX = Math.min(minX, dx); maxX = Math.max(maxX, dx); minY = Math.min(minY, dy); maxY = Math.max(maxY, dy);
-  }
-  const bx0 = Math.max(0, Math.floor(minX)), by0 = Math.max(0, Math.floor(minY));
-  const bx1 = Math.min(cv.width, Math.ceil(maxX)), by1 = Math.min(cv.height, Math.ceil(maxY));
-  const bw = bx1 - bx0, bh = by1 - by0;
-  if (bw <= 0 || bh <= 0) return;
-  if (layer.width < bw || layer.height < bh) {
-    layer.width = Math.max(layer.width, bw, 256); layer.height = Math.max(layer.height, bh, 256);
-  }
-  const g = lctx;
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
-  g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, bw, bh);
-  g.imageSmoothingQuality = 'high';
-  g.setTransform(m[0], m[1], m[2], m[3], m[4] - bx0, m[5] - by0);
-
-  // the ink drag: ONE continuous strip, stretched or compressed, never spliced
-  if (L > 0.05) {
-    g.save();
-    const skew = 2 * hs / L;                                          // straight lean, no curve
-    g.transform(1, 0, skew, 1, -skew * uTop, 0);
-    const dry = smooth(60, 1100, L);                                   // strip px of pull
-    const lvl = Math.round(dry * MASKS);
-    const ins = Math.min(6, sw * 0.04), dw = sw - 2 * ins;               // no slivers of the neighbouring letter
-    if (lvl >= MASKS || dw > mix.width) {
-      g.drawImage(sm, b0 + ins, 0, dw, ROWS, x0 - hs + ins, uTop, dw, L);
-    } else if (lvl <= 0) {
-      g.drawImage(DENSE[k], b0 + ins, 0, dw, ROWS, x0 - hs + ins, uTop, dw, L);
-    } else {
-      // dense drag, with the dry drag let through in patches
-      m2ctx.setTransform(1, 0, 0, 1, 0, 0);
-      m2ctx.globalCompositeOperation = 'source-over'; m2ctx.globalAlpha = 1;
-      m2ctx.clearRect(0, 0, dw, MIXH);
-      m2ctx.drawImage(sm, b0 + ins, 0, dw, ROWS, 0, 0, dw, MIXH);
-      m2ctx.globalCompositeOperation = 'destination-in';
-      m2ctx.drawImage(MASK[lvl], 0, 0, dw, MIXH, 0, 0, dw, MIXH);
-      mctx.setTransform(1, 0, 0, 1, 0, 0);
-      mctx.globalCompositeOperation = 'source-over'; mctx.globalAlpha = 1;
-      mctx.drawImage(DENSE[k], b0 + ins, 0, dw, ROWS, 0, 0, dw, MIXH);
-      mctx.drawImage(mix2, 0, 0, dw, MIXH, 0, 0, dw, MIXH);
-      g.drawImage(mix, 0, 0, dw, MIXH, x0 - hs + ins, uTop, dw, L);
-    }
-    g.restore();
-  }
-  // the two halves, each running a device pixel or two into the drag so the joins are closed
-  const e = Math.max(0.6, 1.6 / (DPR * kk));
-  g.drawImage(img, b0, top, sw, CUT - top + e, x0 - hs, uTop - (CUT - top), sw, CUT - top + e);
-  g.drawImage(img, b0, CUT - e, sw, bot - CUT + e, x0 + hs, uBot - e, sw, bot - CUT + e);
-
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.globalAlpha = alpha;
-  ctx.drawImage(layer, 0, 0, bw, bh, bx0, by0, bw, bh);
-}
-
-/* ---------- dashed line across the page, through the middle of the word ---------- */
-const smoothPull = { v: 0 };
-function drawDashes(dt) {
-  agit *= Math.pow(0.5, dt);                                      // gaps settle back to even spacing
-  smoothPull.v += (s - smoothPull.v) * Math.min(1, dt * 6);
-  const pull = smoothPull.v, e = ease(z);
-  const th0 = Math.max(2, 0.021 * H * 0.13);                      // stroke of the small titles
-  const th1 = 0.0208 * H;                                         // small SYMPOSIUM in the composition
-  const th = Math.exp(lerp(Math.log(th0), Math.log(th1), e));
-  const dl = th * DASH_ASP;
-  const gWord = dl * 1.64, gComp = Math.max(dl, W / 3 - dl);      // ~30% fewer dashes; three words at the end
-  const g0 = Math.exp(lerp(Math.log(gWord), Math.log(gComp), e));
-  const reveal = smooth(4.5, 9.5, th);
-  const calm = 1 - 0.85 * e;                                      // the small words stay composed
-  const A = Math.min(1, agit + pull * 0.7) * calm;
-  const near = mouse.x ?? W / 2, R = W * 0.3, yLine = H / 2;
-
-  // 1. lay the dashes out along the line
-  let x = lerp(0, g0 * 0.5, e), n = 0;
-  while (x < W && n < GAPS) {
-    DCX[n] = x + dl / 2;
-    const w = 0.4 + 0.6 * Math.exp(-(((DCX[n] - near) / R) ** 2));
-    const nz = 0.62 * Math.sin(tau * GF1[n] + GP1[n]) + 0.38 * Math.sin(tau * GF2[n] + GP2[n]);
-    x += dl + g0 * Math.exp(A * w * 1.7 * nz);
-    n++;
-  }
-
-  // 1b. like poles: the dashes either side of the cursor push away from it, the next ones crowd up
-  const unit = dl + g0;
-  let vf = 0;
-  if (mouse.x !== null) vf = Math.exp(-(((mouse.y - yLine) / (0.13 * H)) ** 2));
-  const S = unit * (0.95 - 0.8 * e) * vf * (1 + 0.6 * pull), Rr = unit * 1.6;
-  {
-    const steps = Math.max(1, Math.ceil(dt * 240)), h = dt / steps;
-    for (let i = 0; i < n; i++) {
-      let tgt = 0;
-      if (S > 0.01) {
-        const d = DCX[i] - mouse.x;
-        tgt = S * Math.tanh(d / (0.35 * dl)) * Math.exp(-Math.abs(d) / Rr);
-      }
-      for (let st = 0; st < steps; st++) { DXV[i] += (80 * (tgt - DXO[i]) - 13 * DXV[i]) * h; DXO[i] += DXV[i] * h; }
-      DCX[i] += DXO[i];
-    }
-    for (let i = n; i < Math.min(GAPS, n + 8); i++) { DXO[i] = 0; DXV[i] = 0; }
-  }
-
-  // 2. the cursor touches one dash at a time
-  let hov = -1;
-  const band = Math.max(0.1 * H, 3 * th);
-  if (mouse.x !== null && n) {
-    let best = Infinity;
-    for (let i = 0; i < n; i++) { const d = Math.abs(DCX[i] - mouse.x); if (d < best) { best = d; hov = i; } }
-    if (Math.abs(mouse.y - (yLine + DY[hov])) > band) hov = -1;
-  }
-  const boost = 1 + 1.5 * pull;
-  const speed = Math.hypot(msp.vx, msp.vy);
-  msp.vx *= Math.pow(0.02, dt); msp.vy *= Math.pow(0.02, dt);
-  if (hov >= 0) {
-    // a quick stroke sets every dash it passes over moving; a slow one only nudges the dash under it
-    if (hoverPrev >= 0 && hoverPrev !== hov && speed > 700) {
-      const side = mouse.y < yLine ? 1 : -1;
-      const imp = (msp.vy * 0.05 + side * (speed - 700) * 0.045) * boost * (1 - 0.6 * e);
-      const a0 = Math.min(hoverPrev, hov), a1 = Math.max(hoverPrev, hov);
-      for (let j = a0; j <= a1; j++) DV[j] = Math.max(-260, Math.min(260, DV[j] + imp));
-    }
-    if (wheelKick) DV[hov] += Math.max(-200, Math.min(200, wheelKick)) * boost;
-  }
-  wheelKick = 0; hoverPrev = hov;
-
-  // 3. springs: the touched dash is pushed away from the cursor, its neighbours follow softly
-  const steps = Math.max(1, Math.ceil(dt * 240)), h = dt / steps;
-  const K = 60, C = 110, DAMP = 10, lim = 0.06 * H;
-  let push = 0;
-  if (hov >= 0) {
-    const dy = mouse.y - yLine, f = 1 - Math.min(1, Math.abs(dy) / band);
-    push = -(dy >= 0 ? 1 : -1) * f * 0.022 * H * boost * (1 - 0.6 * e);
-  }
-  for (let st = 0; st < steps; st++) {
-    for (let i = 0; i < n; i++) {
-      const tgt = i === hov ? push : 0;
-      const l = i > 0 ? DY[i - 1] : 0, r = i < n - 1 ? DY[i + 1] : 0;
-      DV[i] += (K * (tgt - DY[i]) + C * (l + r - 2 * DY[i]) - DAMP * DV[i]) * h;
-    }
-    for (let i = 0; i < n; i++) DY[i] = Math.max(-lim, Math.min(lim, DY[i] + DV[i] * h));
-  }
-
-  // 4. draw
-  const good = [];
-  for (let k = 0; k < NP; k++) if (STEM[k] && STEM_INK[k] > 0.5) good.push(k);
-  const ok = [];
-  for (let q = 0; q < NP; q++) if (WORD_OK[q]) ok.push(q);
-  ctx.globalCompositeOperation = 'multiply';
-  for (let i = 0; i < n; i++) {
-    const cx = DCX[i], cy = yLine + DY[i];
-    const l = i > 0 ? i - 1 : i, r = i < n - 1 ? i + 1 : i;
-    const slope = r > l ? (DY[r] - DY[l]) / Math.max(1, DCX[r] - DCX[l]) : 0;
-    ctx.setTransform(DPR, 0, 0, DPR, DPR * cx, DPR * cy);
-    if (slope) ctx.rotate(Math.max(-0.5, Math.min(0.5, Math.atan(slope))));
-    if (reveal < 1) {
-      const kp = DASH_PRINT[i] % NP;
-      const ks = good.length ? (STEM_INK[kp] > 0.5 ? kp : good[DASH_PRINT[i] % good.length]) : -1;
-      ctx.globalAlpha = 1 - reveal;
-      if (ks >= 0) {
-        ctx.save(); ctx.scale(i % 2 ? -1 : 1, (i >> 1) % 2 ? -1 : 1);
-        ctx.drawImage(STEM[ks], -dl / 2, -th / 2, dl, th);
-        ctx.restore();
-      } else { ctx.fillStyle = '#3F4190'; ctx.fillRect(-dl / 2, -th / 2, dl, th); }
-    }
-    let k = DASH_PRINT[i] % NP;
-    if (!WORD_OK[k] && ok.length) k = ok[DASH_PRINT[i] % ok.length];
-    if (reveal > 0 && THUMB[k]) { ctx.globalAlpha = reveal; ctx.drawImage(THUMB[k], -dl / 2, -th / 2, dl, th); }
-  }
-  ctx.globalAlpha = 1;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-}
-
-/* ---------- frame ---------- */
-let last = performance.now(), zSpeed = 0;
-/* ---------- export: the current frame at high resolution, titles included, UI left out ---------- */
-let exportScale = 0;
-const pngBtn = document.getElementById('png');
-pngBtn.addEventListener('click', async () => {
-  if (exportScale || pngBtn.disabled) return;
-  pngBtn.disabled = true; pngBtn.textContent = '…';
-  try { await document.fonts.ready; } catch (_) {}
-  // aim for ~6000 px on the long side, within what browsers will allocate for one canvas
-  let sc = Math.max(3, Math.ceil(6000 / Math.max(W, H)));
-  while (sc > 2 && (W * sc > 16000 || H * sc > 16000 || W * H * sc * sc > 60e6)) sc--;
-  exportScale = sc;
-});
-function drawTitles(g) {
-  g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
-  g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#3F4190';
-  g.textBaseline = 'middle';
-  for (const id in TXT) {
-    const el = txtEl[id], cs = getComputedStyle(el), r = el.getBoundingClientRect();
-    const fs = parseFloat(cs.fontSize), lh = parseFloat(cs.lineHeight) || fs * 1.13;
-    const ls = (parseFloat(cs.letterSpacing) || 0);
-    g.font = `${cs.fontWeight} ${fs}px ${cs.fontFamily}`;
-    const lines = el.innerHTML.split(/<br\s*\/?>/i).map(s => s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').toUpperCase());
-    lines.forEach((line, j) => {
-      const chars = Array.from(line), widths = chars.map(ch => g.measureText(ch).width + ls);
-      const total = widths.reduce((a, b) => a + b, 0) - ls;
-      let x = TXT[id].right ? r.right - total : r.left;
-      const y = r.top + (j + 0.5) * lh;
-      chars.forEach((ch, c) => { g.fillText(ch, x, y); x += widths[c]; });
-    });
-  }
-}
-function finishExport() {
-  const out = document.createElement('canvas'); out.width = cv.width; out.height = cv.height;
-  const g = out.getContext('2d');
-  g.drawImage(cv, 0, 0);
-  g.setTransform(DPR, 0, 0, DPR, 0, 0);
-  drawTitles(g);
-  const done = () => { pngBtn.disabled = false; pngBtn.textContent = 'PNG'; };
-  out.toBlob(blob => {
-    if (!blob) { done(); return; }
-    const a = document.createElement('a'), d = new Date();
-    const stamp = d.toISOString().slice(0, 19).replace(/[-:T]/g, '');
-    a.href = URL.createObjectURL(blob);
-    a.download = `symposium-${stamp}-${out.width}x${out.height}.png`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    done();
-  }, 'image/png');
-}
-
-function frame(now) {
-  const exporting = exportScale > 0;
-  if (exporting) { DPR = exportScale; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); }
-  const dt = Math.min(0.05, (now - last) / 1000); last = now; clock += dt;
-  let sGoal;
-  if (auto) { autoT += dt; [zT, sGoal] = timeline(autoT); }
-  const zp = z, sp = s;
-  z += (zT - z) * Math.min(1, dt * (auto ? 12 : 5)); if (Math.abs(zT - z) < 1e-4) z = zT;
-  if (!auto) {
-    // scrolling: the letters are pulled open on the way between the word and the composition,
-    // and closed again at either end; a hand drag can pull further
-    kick *= Math.pow(0.08, dt);
-    const between = 0.92 * Math.pow(Math.sin(Math.PI * z), 0.8);
-    sGoal = clamp(Math.max(sT, between + kick), 0, 1);
-  }
-  s += (sGoal - s) * Math.min(1, dt * (auto ? 12 : 7)); if (Math.abs(sGoal - s) < 1e-4) s = sGoal;
-
-  // re-inking: now and then one or two letters, chosen at random, slowly take another print.
-  // scrolling and pulling make it happen a little more often, never all at once
-  // scroll speed (word <-> composition per second), smoothed
-  zSpeed += (Math.abs(z - zp) / Math.max(dt, 1e-3) - zSpeed) * Math.min(1, dt * 6);
-  const pace = 1 + zSpeed * 6 + Math.abs(s - sp) / Math.max(dt, 1e-3) * 2;   // 1 at rest
-  untilNext -= dt * pace;
-  let guard = 0;
-  while (untilNext <= 0 && guard++ < 4) { reink(pace); untilNext += 1.05 + Math.random() * 0.9; }
-  for (let i = 0; i < LET; i++) if (NXT[i] >= 0) {
-    FADE[i] += dt / FADE_DUR[i];
-    if (FADE[i] >= 1) { CUR[i] = NXT[i]; NXT[i] = -1; FADE[i] = 0; }
-  }
-  wave *= Math.pow(0.3, dt);
-
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.globalCompositeOperation = 'multiply';
-  ctx.imageSmoothingQuality = 'high';
-
-  const kw = Math.min(W * 0.92 / REF_BW, H * 0.36 / REF_BH);          // word scale (screen px per normalised px)
-  const hWord = REF_BH * kw;
-  const Dmax = H / 2 - hWord / 2 + 0.36 * hWord / 2;                   // halves cut by the page edges
-  const aspAdj = Math.pow(clamp(W / H / 1.42, 0.8, 1.3), 0.4);
-  const tiltT = mouse.x !== null ? (mouse.x - W / 2) / (W / 2) * 0.22 : 0;
-  shear += (tiltT - shear) * Math.min(1, dt * 3);               // the mouse tips every drag left or right
-
-  for (let i = 0; i < LET; i++) {
-    // the print this letter is wearing; while re-inking, the new impression slowly comes up over the old
-    const k0 = CUR[i], k1 = NXT[i] >= 0 ? NXT[i] : CUR[i], fr = NXT[i] >= 0 ? FADE[i] : 0;
-    const a1 = NXT[i] >= 0 ? ease(smooth(0, 0.62, fr)) : 0, a0 = 1 - ease(smooth(0.38, 1, fr));
-
-    const zi = ease(smooth(DELAY[i], DELAY[i] + 0.68, z));
-    const C = COMP[i];
-    const kc = C[2] * H * aspAdj / REF_BH;
-    const kn = Math.exp(lerp(Math.log(kw), Math.log(kc), zi));   // screen px per normalised px
-    const D = s * Dmax * lerp(1, 0.55, zi);
-    const rot = ROT[i] * Math.sin(Math.PI * zi);
-    const arc = ARC[i] * Math.sin(Math.PI * zi);
-    const lean = clamp(LEAN[i] + shear, -0.45, 0.45) * D;
-    for (const [k, a] of (NXT[i] >= 0 ? [[k0, a0], [k1, a1]] : [[k0, 1]])) {
-      const kk2 = READY[k] ? k : 0, P = META.prints[kk2];
-      const norm = REF_BW / P.bw, kk = kn * norm;                   // every print shown at the same word width
-      const wx = W / 2 + (REFC[i] - 0.5) * REF_BW * kw, wy = H / 2;
-      const X = lerp(wx, C[0] * W, zi) + arc * H, Y = lerp(wy, C[1] * H, zi) - arc * W * 0.3;
-      drawLetter(kk2, i, a, X, Y, kk, rot, D, lean);
-    }
-  }
-  drawDashes(dt);
-  placeText(ease(z));
-
-  if (exporting) { finishExport(); exportScale = 0; resize(); }
-  requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
-window.__set = (zz, ss) => { setAuto(false); z = zT = zz; s = sT = ss; kick = 0; };
-window.__wheel = (dy) => dispatchEvent(new WheelEvent('wheel', { deltaY: dy, cancelable: true }));
 </script>
 </body>
 </html>
