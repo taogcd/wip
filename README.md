@@ -8,4 +8,6 @@ A digital composing stick for the MA Graphic Communication Design In Progress 20
 
 MA Graphic Communication Design, Central Saint Martins, 2026–27.
 
-The earlier SYMPOSIUM letterpress piece (19–20 November 2026) is kept in this repository's history at commit 570193d.
+## symposium/
+
+WIP Symposium: SYMPOSIUM printed in letterpress, pulled open across the page, made for the MAGCD symposium, 19–20 November 2026. Hidden keys: `F` fullscreen, `Space` autoplay.
